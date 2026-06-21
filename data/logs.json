@@ -1,0 +1,53 @@
+[
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功0条，重复0条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_f682c80a7a9e4518",
+    "id": "log_2131436dae274e53",
+    "timestamp": 1782045457049
+  },
+  {
+    "level": "info",
+    "category": "system",
+    "message": "一致性校验完成：4/4 通过",
+    "affectedScope": "全局数据",
+    "id": "log_ccdc2eeb941f483b",
+    "timestamp": 1782045624773
+  },
+  {
+    "level": "info",
+    "category": "system",
+    "message": "一致性校验完成：4/4 通过",
+    "affectedScope": "全局数据",
+    "id": "log_dd335a3366444de2",
+    "timestamp": 1782045667410
+  },
+  {
+    "level": "warn",
+    "category": "qa",
+    "message": "空问题被拒绝",
+    "affectedScope": "当前问答请求",
+    "recoverable": true,
+    "id": "log_e6b79f7dd2a04549",
+    "timestamp": 1782045704016
+  },
+  {
+    "level": "error",
+    "category": "qa",
+    "message": "非法参数 topK=999，必须在 1-50 之间",
+    "affectedScope": "当前问答请求",
+    "recoverable": true,
+    "id": "log_9f4ef50018f94963",
+    "timestamp": 1782045718010
+  },
+  {
+    "level": "warn",
+    "category": "qa",
+    "message": "参数非法已修正：topK 必须是 1 到 50 之间的整数",
+    "affectedScope": "当前问答请求，参数已被重置为默认值",
+    "recoverable": true,
+    "id": "log_2294fe8236784740",
+    "timestamp": 1782045718013
+  }
+]

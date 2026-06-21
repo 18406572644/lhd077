@@ -1,0 +1,34 @@
+[
+  {
+    "versionId": "ver_f682c80a7a9e4518",
+    "question": "???????",
+    "retrievedChunks": [],
+    "answer": "未找到相关知识片段，请补充知识库后重试。",
+    "confidence": 0,
+    "paramsSnapshot": {
+      "topK": 5,
+      "minScore": 0.1,
+      "chunkSize": 300,
+      "chunkOverlap": 50,
+      "useBM25": true
+    },
+    "id": "qa_7857c1484f404274",
+    "createdAt": 1782045690558
+  },
+  {
+    "versionId": "ver_f682c80a7a9e4518",
+    "question": "test",
+    "retrievedChunks": [],
+    "answer": "未找到相关知识片段，请补充知识库后重试。",
+    "confidence": 0,
+    "paramsSnapshot": {
+      "topK": 5,
+      "minScore": 0.1,
+      "chunkSize": 300,
+      "chunkOverlap": 50,
+      "useBM25": true
+    },
+    "id": "qa_861c84493764432d",
+    "createdAt": 1782045718012
+  }
+]
