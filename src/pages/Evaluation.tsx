@@ -12,22 +12,33 @@ import {
   ThumbsUp,
   ThumbsDown,
   Minus,
+  Gauge,
+  Calculator,
+  Code2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import PageHeader from "@/components/PageHeader";
 import VersionSelector from "@/components/VersionSelector";
-import type { EvaluationTask, QAResult, HumanJudgment, TestCase } from "../../shared/types";
+import type {
+  EvaluationTask,
+  QAResult,
+  HumanJudgment,
+  TestCase,
+  Metric,
+} from "../../shared/types";
 
 export default function Evaluation() {
   const { versions, selectedVersionId, retrievalParams, setVersions, showToast } =
     useAppStore();
   const [tasks, setTasks] = useState<EvaluationTask[]>([]);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [taskName, setTaskName] = useState("");
   const [testSetText, setTestSetText] = useState(
     '[\n  {"question": "如何重置密码？", "standardAnswer": "点击登录页的忘记密码，通过邮箱验证重置"},\n  {"question": "支持哪些支付方式？", "standardAnswer": "支持支付宝、微信支付和银行卡"}\n]',
   );
+  const [selectedMetricIds, setSelectedMetricIds] = useState<string[]>([]);
   const [selectedTask, setSelectedTask] = useState<EvaluationTask | null>(null);
   const [taskResults, setTaskResults] = useState<QAResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,11 +49,21 @@ export default function Evaluation() {
   useEffect(() => {
     api.knowledge.listVersions().then(setVersions);
     loadTasks();
+    loadMetrics();
   }, [setVersions]);
 
   const loadTasks = async () => {
     const list = await api.evaluation.listTasks();
     setTasks(list);
+  };
+
+  const loadMetrics = async () => {
+    try {
+      const list = await api.metrics.list();
+      setMetrics(list);
+    } catch (e) {
+      // 静默失败，指标为空也能正常使用
+    }
   };
 
   const handleCreate = async () => {
@@ -76,11 +97,13 @@ export default function Evaluation() {
         versionId: selectedVersionId,
         retrievalParams,
         testSetFile: testSetFile || undefined,
+        metricIds: selectedMetricIds,
       });
       showToast("任务已创建", "success");
       setShowCreate(false);
       setTaskName("");
       setTestSetFile(null);
+      setSelectedMetricIds([]);
       loadTasks();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "创建失败", "error");
@@ -230,6 +253,58 @@ export default function Evaluation() {
               className="input font-mono text-xs resize-none"
             />
           </div>
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs text-slate-500">
+                <Gauge className="w-3.5 h-3.5 inline mr-1" />
+                选择评测指标（可多选，系统自动计算加权总分）
+              </label>
+              <span className="text-xs text-slate-400">
+                已选 {selectedMetricIds.length} 个
+              </span>
+            </div>
+            {metrics.length === 0 ? (
+              <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center">
+                <p className="text-xs text-slate-400">
+                  暂无自定义指标，使用默认指标
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1">
+                {metrics.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMetricIds((prev) =>
+                        prev.includes(m.id)
+                          ? prev.filter((id) => id !== m.id)
+                          : [...prev, m.id],
+                      );
+                    }}
+                    className={`p-2 text-left rounded-lg border transition-all text-xs ${
+                      selectedMetricIds.includes(m.id)
+                        ? "border-primary-400 bg-primary-50"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {m.computeType === "built-in" ? (
+                        <Calculator className="w-3 h-3 text-primary-500" />
+                      ) : (
+                        <Code2 className="w-3 h-3 text-amber-500" />
+                      )}
+                      <span className="font-medium text-slate-700 truncate">
+                        {m.name}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      权重: {m.weight}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="mt-4 flex justify-end gap-2">
             <button onClick={() => setShowCreate(false)} className="btn-secondary">
               取消
@@ -276,7 +351,7 @@ export default function Evaluation() {
                     {new Date(t.createdAt).toLocaleString("zh-CN")}
                   </div>
                   {t.metrics && (
-                    <div className="flex gap-3 text-xs">
+                    <div className="flex flex-wrap gap-2 text-xs">
                       <span className="text-emerald-600 font-mono">
                         准确率 {(t.metrics.accuracy * 100).toFixed(1)}%
                       </span>
@@ -286,6 +361,12 @@ export default function Evaluation() {
                       <span className="text-slate-400 font-mono">
                         置信度 {(t.metrics.avgConfidence * 100).toFixed(0)}%
                       </span>
+                      {t.metrics.weightedTotalScore !== undefined &&
+                        t.metricIds.length > 0 && (
+                          <span className="text-primary-600 font-mono font-medium">
+                            加权 {(t.metrics.weightedTotalScore * 100).toFixed(1)}%
+                          </span>
+                        )}
                     </div>
                   )}
                   <div className="mt-2 flex gap-1.5">
@@ -338,31 +419,65 @@ export default function Evaluation() {
                     </div>
                   </div>
                   {selectedTask.metrics && (
-                    <div className="flex gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-serif font-bold text-emerald-600">
-                          {(selectedTask.metrics.accuracy * 100).toFixed(0)}%
+                    <div>
+                      <div className="flex gap-4 mb-3">
+                        <div className="text-center">
+                          <div className="text-2xl font-serif font-bold text-emerald-600">
+                            {(selectedTask.metrics.accuracy * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-[10px] text-slate-400">准确率</div>
                         </div>
-                        <div className="text-[10px] text-slate-400">准确率</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-serif font-bold text-amber-600">
-                          {(selectedTask.metrics.partialRate * 100).toFixed(0)}%
+                        <div className="text-center">
+                          <div className="text-2xl font-serif font-bold text-amber-600">
+                            {(selectedTask.metrics.partialRate * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-[10px] text-slate-400">部分正确</div>
                         </div>
-                        <div className="text-[10px] text-slate-400">部分正确</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-serif font-bold text-red-500">
-                          {(selectedTask.metrics.wrongRate * 100).toFixed(0)}%
+                        <div className="text-center">
+                          <div className="text-2xl font-serif font-bold text-red-500">
+                            {(selectedTask.metrics.wrongRate * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-[10px] text-slate-400">错误率</div>
                         </div>
-                        <div className="text-[10px] text-slate-400">错误率</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-serif font-bold text-primary-600">
-                          {(selectedTask.metrics.avgConfidence * 100).toFixed(0)}%
+                        <div className="text-center">
+                          <div className="text-2xl font-serif font-bold text-primary-600">
+                            {(selectedTask.metrics.avgConfidence * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-[10px] text-slate-400">平均置信度</div>
                         </div>
-                        <div className="text-[10px] text-slate-400">平均置信度</div>
+                        {selectedTask.metrics.weightedTotalScore !== undefined &&
+                          selectedTask.metricIds.length > 0 && (
+                            <div className="text-center pl-3 border-l border-slate-200">
+                              <div className="text-2xl font-serif font-bold text-violet-600">
+                                {(selectedTask.metrics.weightedTotalScore * 100).toFixed(0)}%
+                              </div>
+                              <div className="text-[10px] text-slate-400">加权总分</div>
+                            </div>
+                          )}
                       </div>
+                      {selectedTask.metrics.metricResults &&
+                        selectedTask.metrics.metricResults.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                            {selectedTask.metrics.metricResults.map((mr) => (
+                              <div
+                                key={mr.metricId}
+                                className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded text-xs"
+                              >
+                                <span className="text-slate-600">{mr.metricName}</span>
+                                <span
+                                  className={`font-mono font-medium ${
+                                    mr.higherIsBetter ? "text-emerald-600" : "text-red-500"
+                                  }`}
+                                >
+                                  {(mr.value * 100).toFixed(1)}%
+                                </span>
+                                <span className="text-slate-400 text-[10px]">
+                                  ×{mr.weight}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>

@@ -12,6 +12,9 @@ import type {
   CompareResult,
   HumanJudgment,
   TestCase,
+  Metric,
+  BuiltInMetric,
+  MetricComputeType,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -161,6 +164,7 @@ export const api = {
       retrievalParams?: Partial<RetrievalParams>;
       modelConfig?: ModelConfig;
       testSetFile?: File;
+      metricIds?: string[];
     }): Promise<EvaluationTask> {
       const fd = new FormData();
       fd.append("name", params.name);
@@ -174,6 +178,8 @@ export const api = {
         fd.append("retrievalParams", JSON.stringify(params.retrievalParams));
       if (params.modelConfig)
         fd.append("modelConfig", JSON.stringify(params.modelConfig));
+      if (params.metricIds)
+        fd.append("metricIds", JSON.stringify(params.metricIds));
       return request<EvaluationTask>("/evaluation/tasks", {
         method: "POST",
         body: fd,
@@ -189,6 +195,57 @@ export const api = {
     },
     exportTask(id: string): string {
       return `${API_BASE}/evaluation/tasks/${id}/export`;
+    },
+  },
+
+  metrics: {
+    list(): Promise<Metric[]> {
+      return request<Metric[]>("/metrics");
+    },
+    get(id: string): Promise<Metric> {
+      return request<Metric>(`/metrics/${id}`);
+    },
+    create(params: {
+      name: string;
+      description: string;
+      computeType: MetricComputeType;
+      builtInType?: BuiltInMetric;
+      customScript?: string;
+      weight: number;
+      higherIsBetter: boolean;
+    }): Promise<Metric> {
+      return request<Metric>("/metrics", {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
+    },
+    update(
+      id: string,
+      params: Partial<{
+        name: string;
+        description: string;
+        computeType: MetricComputeType;
+        builtInType?: BuiltInMetric;
+        customScript?: string;
+        weight: number;
+        higherIsBetter: boolean;
+      }>,
+    ): Promise<Metric> {
+      return request<Metric>(`/metrics/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(params),
+      });
+    },
+    remove(id: string): Promise<{ success: boolean }> {
+      return request(`/metrics/${id}`, {
+        method: "DELETE",
+      });
+    },
+    testScript(script: string): Promise<{ success: boolean; value?: number; error?: string }> {
+      return request("/metrics/test-script", {
+        method: "POST",
+        body: JSON.stringify({ script }),
+      });
     },
   },
 

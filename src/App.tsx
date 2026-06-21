@@ -6,6 +6,7 @@ import QATest from "@/pages/QATest";
 import Evaluation from "@/pages/Evaluation";
 import Compare from "@/pages/Compare";
 import Logs from "@/pages/Logs";
+import Metrics from "@/pages/Metrics";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="/qa" element={<QATest />} />
             <Route path="/evaluation" element={<Evaluation />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/metrics" element={<Metrics />} />
             <Route path="/logs" element={<Logs />} />
           </Routes>
         </main>

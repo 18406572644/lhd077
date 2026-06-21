@@ -4,6 +4,7 @@ import {
   MessageSquare,
   ClipboardCheck,
   GitCompare,
+  Gauge,
   ScrollText,
   DatabaseZap,
 } from "lucide-react";
@@ -13,6 +14,7 @@ const navItems = [
   { to: "/qa", label: "问答测试台", icon: MessageSquare },
   { to: "/evaluation", label: "批量评测", icon: ClipboardCheck },
   { to: "/compare", label: "版本对比", icon: GitCompare },
+  { to: "/metrics", label: "指标管理", icon: Gauge },
   { to: "/logs", label: "系统日志", icon: ScrollText },
 ];
 
