@@ -7,6 +7,7 @@ import type {
   EvaluationTask,
   LogEntry,
   ImportResult,
+  ImportProgress,
   ConsistencyReport,
   CompareResult,
   HumanJudgment,
@@ -57,6 +58,30 @@ export const api = {
       return request<ImportResult>("/knowledge/import", {
         method: "POST",
         body: fd,
+      });
+    },
+    importAsync(
+      files: File[],
+      versionName?: string,
+      retrievalParams?: Partial<RetrievalParams>,
+    ): Promise<{ taskId: string }> {
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      if (versionName) fd.append("versionName", versionName);
+      if (retrievalParams)
+        fd.append("retrievalParams", JSON.stringify(retrievalParams));
+      return request<{ taskId: string }>("/knowledge/import/async", {
+        method: "POST",
+        body: fd,
+      });
+    },
+    getImportProgress(taskId: string): Promise<ImportProgress> {
+      return request<ImportProgress>(`/knowledge/import/progress/${encodeURIComponent(taskId)}`);
+    },
+    cancelImport(taskId: string, rollback: boolean): Promise<{ success: boolean }> {
+      return request<{ success: boolean }>(`/knowledge/import/cancel/${encodeURIComponent(taskId)}`, {
+        method: "POST",
+        body: JSON.stringify({ rollback }),
       });
     },
     listVersions(): Promise<KnowledgeVersion[]> {

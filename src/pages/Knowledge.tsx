@@ -17,7 +17,8 @@ import { useAppStore } from "@/store/useAppStore";
 import PageHeader from "@/components/PageHeader";
 import VersionSelector from "@/components/VersionSelector";
 import ParamsPanel from "@/components/ParamsPanel";
-import type { KnowledgeDocument } from "../../shared/types";
+import ImportProgressModal from "@/components/ImportProgressModal";
+import type { KnowledgeDocument, ImportResult } from "../../shared/types";
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -35,6 +36,7 @@ export default function Knowledge() {
     builtAt?: number;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importTaskId, setImportTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     api.knowledge.listVersions().then(setVersions);
@@ -52,25 +54,42 @@ export default function Knowledge() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setLoading(true);
     try {
-      const result = await api.knowledge.import(
+      const result = await api.knowledge.importAsync(
         Array.from(files),
         versionName || undefined,
         retrievalParams,
       );
+      setImportTaskId(result.taskId);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setVersionName("");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "导入启动失败", "error");
+    }
+  };
+
+  const handleImportComplete = async (result: ImportResult | undefined) => {
+    if (result) {
       showToast(
         `导入完成：成功${result.success}条，重复${result.duplicates}条，跳过${result.skipped}条，错误${result.errors.length}条`,
         result.errors.length > 0 ? "error" : "success",
       );
       await api.knowledge.listVersions().then(setVersions);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setVersionName("");
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : "导入失败", "error");
-    } finally {
-      setLoading(false);
+      if (result.versionId) {
+        api.knowledge.getIndexStatus(result.versionId).then(setIndexStatus);
+        api.knowledge.listDocuments(result.versionId).then(setDocuments);
+      }
     }
+    setImportTaskId(null);
+  };
+
+  const handleImportCancel = async (rollback: boolean) => {
+    showToast(
+      rollback ? "导入已取消，数据已回滚" : "导入已取消，部分数据已保留",
+      "warn",
+    );
+    await api.knowledge.listVersions().then(setVersions);
+    setImportTaskId(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -195,9 +214,10 @@ export default function Knowledge() {
                 maxLength={MAX_QUESTION_LENGTH}
               />
             </div>
-            {loading && (
+            {importTaskId && (
               <div className="mt-4 text-center text-sm text-primary-600">
-                正在处理导入...
+                <RefreshCw className="w-4 h-4 inline mr-1 animate-spin" />
+                导入进行中...
               </div>
             )}
           </div>
@@ -343,6 +363,15 @@ export default function Knowledge() {
           </div>
         </div>
       </div>
+
+      {importTaskId && (
+        <ImportProgressModal
+          taskId={importTaskId}
+          onClose={() => setImportTaskId(null)}
+          onComplete={handleImportComplete}
+          onCancel={handleImportCancel}
+        />
+      )}
     </div>
   );
 }
