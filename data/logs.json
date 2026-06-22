@@ -49,5 +49,246 @@
     "recoverable": true,
     "id": "log_2294fe8236784740",
     "timestamp": 1782045718013
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功1条，重复0条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_7f1c84836637458b",
+    "id": "log_afc1c82811184a2e",
+    "timestamp": 1782085404011
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_e79f11e61aea4dba",
+    "timestamp": 1782085441293
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_1fc05fcdf22a45d1",
+    "timestamp": 1782085694126
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_d6bb07694e5445d1",
+    "timestamp": 1782085696729
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_0f79a78a5a4b49eb",
+    "timestamp": 1782085697072
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_48e11086ec3d4caa",
+    "timestamp": 1782085697516
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_aec2e63a8f7749c0",
+    "timestamp": 1782085697662
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_de70bef1418443cc",
+    "timestamp": 1782085697766
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_db96b19f8f7d4962",
+      "judgment": "correct",
+      "note": "测试"
+    },
+    "affectedScope": "问答结果 qa_db96b19f8f7d4962",
+    "id": "log_f702a0a3fb3a4067",
+    "timestamp": 1782085705967
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：correct",
+    "details": {
+      "resultId": "qa_cce206c82f544c17",
+      "judgment": "correct"
+    },
+    "affectedScope": "问答结果 qa_cce206c82f544c17",
+    "id": "log_6036c03529f8441b",
+    "timestamp": 1782085748734
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：partial",
+    "details": {
+      "resultId": "qa_cce206c82f544c17",
+      "judgment": "partial"
+    },
+    "affectedScope": "问答结果 qa_cce206c82f544c17",
+    "id": "log_afa2696388074234",
+    "timestamp": 1782085751110
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：wrong",
+    "details": {
+      "resultId": "qa_cce206c82f544c17",
+      "judgment": "wrong"
+    },
+    "affectedScope": "问答结果 qa_cce206c82f544c17",
+    "id": "log_a0698ddcf7d34722",
+    "timestamp": 1782085752562
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建评测任务：测试（2条用例）",
+    "affectedScope": "评测任务 eval_f7c5838a79b54624",
+    "id": "log_39388d1f0c4244e5",
+    "timestamp": 1782085768535
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "开始执行评测任务：测试",
+    "affectedScope": "评测任务 eval_f7c5838a79b54624",
+    "id": "log_f12ee2a3d3564301",
+    "timestamp": 1782085770214
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "评测任务完成：测试，准确率 100.0%",
+    "affectedScope": "评测任务 eval_f7c5838a79b54624",
+    "id": "log_479b53be35fc4f6f",
+    "timestamp": 1782085770277
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建评测任务：测试2（1条用例）",
+    "affectedScope": "评测任务 eval_d15c058ef9b94538",
+    "id": "log_74d700c64d6d45bb",
+    "timestamp": 1782085816564
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "开始执行评测任务：测试2",
+    "affectedScope": "评测任务 eval_d15c058ef9b94538",
+    "id": "log_b43c5fd0bafc4fce",
+    "timestamp": 1782085817997
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "评测任务完成：测试2，准确率 100.0%",
+    "affectedScope": "评测任务 eval_d15c058ef9b94538",
+    "id": "log_d990847f19c54cad",
+    "timestamp": 1782085818029
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：wrong",
+    "details": {
+      "resultId": "qa_6dbdb3c7edb347e5",
+      "judgment": "wrong"
+    },
+    "affectedScope": "问答结果 qa_6dbdb3c7edb347e5",
+    "id": "log_f843234564f3439b",
+    "timestamp": 1782085831051
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "版本对比：测试 vs 测试2",
+    "affectedScope": "评测任务 eval_f7c5838a79b54624, eval_d15c058ef9b94538",
+    "id": "log_d3f5fb3b5454498f",
+    "timestamp": 1782085844183
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功1条，重复0条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_d8b1ae6e69cd4521",
+    "id": "log_88cfe74a3d544f2c",
+    "timestamp": 1782086397118
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功0条，重复1条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_f3c89ce3f8ad4578",
+    "id": "log_6460ffb3659840f6",
+    "timestamp": 1782086404948
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "删除文档：电商客服知识库（本地评测专用）",
+    "affectedScope": "文档 doc_208724526464417d，所属版本 ver_f3c89ce3f8ad4578",
+    "id": "log_2aeebb0d728147a4",
+    "timestamp": 1782086599743
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功0条，重复1条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_a5fb3831589f4761",
+    "id": "log_8f5dc7a99b1b4a01",
+    "timestamp": 1782086611870
   }
 ]

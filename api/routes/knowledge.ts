@@ -24,6 +24,44 @@ router.post('/import', upload.array('files', 50), (req, res) => {
   }
 });
 
+router.post('/import/async', upload.array('files', 50), (req, res) => {
+  try {
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    const versionName = req.body.versionName as string | undefined;
+    const retrievalParams = req.body.retrievalParams
+      ? JSON.parse(req.body.retrievalParams as string)
+      : undefined;
+    const parsed = files.map((f) => ({
+      filename: f.originalname,
+      content: f.buffer.toString('utf-8'),
+    }));
+    const result = KnowledgeService.startImportAsync(parsed, { versionName, retrievalParams });
+    res.json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    res.status(500).json({ code: 'IMPORT_START_FAILED', message: msg });
+  }
+});
+
+router.get('/import/progress/:taskId', (req, res) => {
+  const progress = KnowledgeService.getImportProgress(req.params.taskId);
+  if (!progress) {
+    res.status(404).json({ code: 'TASK_NOT_FOUND', message: '导入任务不存在' });
+    return;
+  }
+  res.json(progress);
+});
+
+router.post('/import/cancel/:taskId', (req, res) => {
+  const { rollback } = req.body as { rollback?: boolean };
+  const result = KnowledgeService.cancelImport(req.params.taskId, rollback ?? true);
+  if (!result.success) {
+    res.status(400).json({ code: 'CANCEL_FAILED', message: result.message });
+    return;
+  }
+  res.json({ success: true });
+});
+
 router.get('/versions', (_req, res) => {
   res.json(KnowledgeService.listVersions());
 });

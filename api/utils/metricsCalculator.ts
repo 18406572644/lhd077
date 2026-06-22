@@ -1,4 +1,5 @@
 import type { EvaluationMetrics, HumanJudgment, QAResult } from '../../shared/types.js';
+import { evaluateAnswer } from '../services/AutoEvaluationService.js';
 
 export function computeMetrics(results: QAResult[]): EvaluationMetrics {
   if (results.length === 0) {
@@ -21,7 +22,7 @@ export function computeMetrics(results: QAResult[]): EvaluationMetrics {
         wrong++;
         break;
       default: {
-        const auto = autoJudge(r.answer, r.standardAnswer);
+        const auto = r.autoEvaluation?.suggestedJudgment ?? autoJudge(r.answer, r.standardAnswer);
         if (auto === 'correct') correct++;
         else if (auto === 'partial') partial++;
         else wrong++;
@@ -40,14 +41,19 @@ export function computeMetrics(results: QAResult[]): EvaluationMetrics {
 
 export function autoJudge(answer: string, standardAnswer?: string): HumanJudgment {
   if (!standardAnswer) return 'wrong';
-  const a = answer.toLowerCase().replace(/\s+/g, '');
-  const s = standardAnswer.toLowerCase().replace(/\s+/g, '');
-  if (!a) return 'wrong';
-  if (a.includes(s) || s.includes(a)) return 'correct';
-  const overlap = commonChars(a, s);
-  const ratio = overlap / Math.max(a.length, s.length);
-  if (ratio >= 0.5) return 'partial';
-  return 'wrong';
+  try {
+    const evaluation = evaluateAnswer(answer, standardAnswer);
+    return evaluation.suggestedJudgment;
+  } catch {
+    const a = answer.toLowerCase().replace(/\s+/g, '');
+    const s = standardAnswer.toLowerCase().replace(/\s+/g, '');
+    if (!a) return 'wrong';
+    if (a.includes(s) || s.includes(a)) return 'correct';
+    const overlap = commonChars(a, s);
+    const ratio = overlap / Math.max(a.length, s.length);
+    if (ratio >= 0.5) return 'partial';
+    return 'wrong';
+  }
 }
 
 function commonChars(a: string, b: string): number {

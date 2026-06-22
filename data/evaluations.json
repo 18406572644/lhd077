@@ -1,0 +1,73 @@
+[
+  {
+    "name": "测试",
+    "testSet": [
+      {
+        "question": "如何重置密码？",
+        "standardAnswer": "点击登录页的忘记密码，通过邮箱验证重置"
+      },
+      {
+        "question": "支持哪些支付方式？",
+        "standardAnswer": "支持支付宝、微信支付和银行卡"
+      }
+    ],
+    "versionId": "ver_7f1c84836637458b",
+    "retrievalParams": {
+      "topK": 5,
+      "minScore": 0.1,
+      "chunkSize": 300,
+      "chunkOverlap": 50,
+      "useBM25": true
+    },
+    "metricIds": [],
+    "id": "eval_f7c5838a79b54624",
+    "createdAt": 1782085768533,
+    "status": "done",
+    "resultIds": [
+      "qa_88d631e4713d4507",
+      "qa_d2ce69e8e9854704"
+    ],
+    "startedAt": 1782085770213,
+    "metrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 2
+    },
+    "finishedAt": 1782085770267
+  },
+  {
+    "name": "测试2",
+    "testSet": [
+      {
+        "question": "如何上天？",
+        "standardAnswer": "坐飞机"
+      }
+    ],
+    "versionId": "ver_7f1c84836637458b",
+    "retrievalParams": {
+      "topK": 5,
+      "minScore": 0.1,
+      "chunkSize": 300,
+      "chunkOverlap": 50,
+      "useBM25": true
+    },
+    "metricIds": [],
+    "id": "eval_d15c058ef9b94538",
+    "createdAt": 1782085816563,
+    "status": "done",
+    "resultIds": [
+      "qa_e552170c0e224f84"
+    ],
+    "startedAt": 1782085817996,
+    "metrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 1
+    },
+    "finishedAt": 1782085818029
+  }
+]

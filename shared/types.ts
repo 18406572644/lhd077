@@ -56,6 +56,36 @@ export interface RetrievedChunk {
 
 export type HumanJudgment = 'correct' | 'partial' | 'wrong';
 
+export interface DimensionScore {
+  semanticSimilarity: number;
+  keyInfoCoverage: number;
+  factualAccuracy: number;
+  formatNormativity: number;
+}
+
+export interface AutoEvaluation {
+  dimensions: DimensionScore;
+  weightedScore: number;
+  suggestedJudgment: HumanJudgment;
+  confidence: number;
+  analysis: {
+    matchedKeywords: string[];
+    missingKeywords: string[];
+    factualErrors: string[];
+    formatIssues: string[];
+  };
+  evaluatedAt: number;
+}
+
+export interface EvaluationWeights {
+  semanticSimilarity: number;
+  keyInfoCoverage: number;
+  factualAccuracy: number;
+  formatNormativity: number;
+  correctThreshold: number;
+  partialThreshold: number;
+}
+
 export interface QAResult {
   id: string;
   versionId: string;
@@ -69,6 +99,7 @@ export interface QAResult {
   paramsSnapshot: RetrievalParams & { modelConfig?: ModelConfig };
   humanJudgment?: HumanJudgment;
   humanNote?: string;
+  autoEvaluation?: AutoEvaluation;
 }
 
 export type TaskStatus = 'pending' | 'running' | 'done' | 'failed';
@@ -78,12 +109,49 @@ export interface TestCase {
   standardAnswer: string;
 }
 
+export type MetricComputeType = 'built-in' | 'custom';
+export type BuiltInMetric = 'accuracy' | 'partialRate' | 'wrongRate' | 'avgConfidence';
+
+export interface Metric {
+  id: string;
+  name: string;
+  description: string;
+  computeType: MetricComputeType;
+  builtInType?: BuiltInMetric;
+  customScript?: string;
+  weight: number;
+  higherIsBetter: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface MetricResult {
+  metricId: string;
+  metricName: string;
+  value: number;
+  weight: number;
+  higherIsBetter: boolean;
+  weightedScore: number;
+}
+
 export interface EvaluationMetrics {
   accuracy: number;
   partialRate: number;
   wrongRate: number;
   avgConfidence: number;
   total: number;
+  weightedTotalScore?: number;
+  metricResults?: MetricResult[];
+  metricConfigs?: Metric[];
+  autoEvalStats?: {
+    avgSemanticSimilarity: number;
+    avgKeyInfoCoverage: number;
+    avgFactualAccuracy: number;
+    avgFormatNormativity: number;
+    avgWeightedScore: number;
+    autoAccuracy: number;
+    autoJudgmentCount: number;
+  };
 }
 
 export interface EvaluationTask {
@@ -93,6 +161,7 @@ export interface EvaluationTask {
   versionId: string;
   retrievalParams: RetrievalParams;
   modelConfig?: ModelConfig;
+  metricIds: string[];
   status: TaskStatus;
   resultIds: string[];
   metrics?: EvaluationMetrics;
@@ -156,6 +225,36 @@ export interface ImportResult {
   duplicates: number;
   errors: Array<{ filename: string; message: string }>;
   versionId: string;
+}
+
+export type ImportPhase = 'parsing' | 'dedup' | 'splitting' | 'indexing' | 'completed' | 'cancelled' | 'failed';
+
+export interface ImportProgress {
+  taskId: string;
+  phase: ImportPhase;
+  totalFiles: number;
+  processedFiles: number;
+  currentFile: string | null;
+  totalDocuments: number;
+  processedDocuments: number;
+  totalChunks: number;
+  processedChunks: number;
+  message: string;
+  startedAt: number;
+  updatedAt: number;
+  result?: ImportResult;
+  error?: string;
+  cancelled: boolean;
+  rollbackOnCancel?: boolean;
+}
+
+export interface ImportTask {
+  id: string;
+  progress: ImportProgress;
+  cancelRequested: boolean;
+  versionId?: string;
+  createdDocIds: string[];
+  createdChunkIds: string[];
 }
 
 export type ApiError = {

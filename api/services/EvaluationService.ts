@@ -1,12 +1,23 @@
-import { EvaluationRepo, LogRepo, QARepo } from '../data/repositories.js';
+import { EvaluationRepo, LogRepo, QARepo, MetricRepo } from '../data/repositories.js';
 import { QAService } from './QAService.js';
 import { computeMetrics } from '../utils/metricsCalculator.js';
 import { exportEvaluationReport } from '../utils/exporter.js';
+import { computeMetricResults } from './MetricsService.js';
+import {
+  evaluateAnswer,
+  batchEvaluateResults,
+  getWeights,
+  setWeights,
+  resetWeights,
+} from './AutoEvaluationService.js';
 import type {
   EvaluationTask,
   TestCase,
   RetrievalParams,
   ModelConfig,
+  QAResult,
+  EvaluationWeights,
+  AutoEvaluation,
 } from '../../shared/types.js';
 
 export const EvaluationService = {
@@ -16,6 +27,7 @@ export const EvaluationService = {
     versionId: string,
     retrievalParams: Partial<RetrievalParams>,
     modelConfig?: ModelConfig,
+    metricIds?: string[],
   ): EvaluationTask {
     const task = EvaluationRepo.create({
       name,
@@ -29,6 +41,7 @@ export const EvaluationService = {
         useBM25: retrievalParams.useBM25 ?? true,
       },
       modelConfig,
+      metricIds: metricIds ?? [],
     });
     LogRepo.create({
       level: 'info',
@@ -83,7 +96,29 @@ export const EvaluationService = {
         }
       }
       const results = QARepo.listByTask(id);
-      const metrics = computeMetrics(results);
+
+      const { results: evaluatedResults, stats } = batchEvaluateResults(results);
+      for (const r of evaluatedResults) {
+        QARepo.update(r.id, { autoEvaluation: r.autoEvaluation });
+      }
+
+      const baseMetrics = computeMetrics(evaluatedResults);
+      const taskAfter = EvaluationRepo.getById(id);
+      let metrics = { ...baseMetrics, autoEvalStats: stats };
+      if (taskAfter && taskAfter.metricIds.length > 0) {
+        const metricConfigs = MetricRepo.getByIds(taskAfter.metricIds);
+        const { metricResults, weightedTotalScore } = computeMetricResults(
+          metricConfigs,
+          baseMetrics,
+          evaluatedResults,
+        );
+        metrics = {
+          ...metrics,
+          weightedTotalScore,
+          metricResults,
+          metricConfigs,
+        };
+      }
       EvaluationRepo.update(id, {
         status: 'done',
         resultIds,
@@ -93,7 +128,7 @@ export const EvaluationService = {
       LogRepo.create({
         level: 'info',
         category: 'evaluation',
-        message: `评测任务完成：${task.name}，准确率 ${(metrics.accuracy * 100).toFixed(1)}%`,
+        message: `评测任务完成：${task.name}，准确率 ${(metrics.accuracy * 100).toFixed(1)}%，自动评估完成 ${stats.autoJudgmentCount} 条`,
         affectedScope: `评测任务 ${id}`,
       });
     } catch (e) {
@@ -126,5 +161,107 @@ export const EvaluationService = {
     const data = this.getTaskResults(id);
     if (!data) return null;
     return exportEvaluationReport(data.task, data.results);
+  },
+
+  getEvaluationWeights(): EvaluationWeights {
+    return getWeights();
+  },
+
+  setEvaluationWeights(weights: Partial<EvaluationWeights>): EvaluationWeights {
+    return setWeights(weights);
+  },
+
+  resetEvaluationWeights(): EvaluationWeights {
+    return resetWeights();
+  },
+
+  evaluateSingleAnswer(
+    answer: string,
+    standardAnswer: string,
+    customWeights?: Partial<EvaluationWeights>,
+  ): AutoEvaluation {
+    return evaluateAnswer(answer, standardAnswer, customWeights);
+  },
+
+  async reEvaluateTask(id: string, customWeights?: Partial<EvaluationWeights>): Promise<EvaluationTask | undefined> {
+    const task = EvaluationRepo.getById(id);
+    if (!task) return undefined;
+
+    const results = QARepo.listByTask(id);
+    const { results: evaluatedResults, stats } = batchEvaluateResults(results, customWeights);
+
+    for (const r of evaluatedResults) {
+      QARepo.update(r.id, { autoEvaluation: r.autoEvaluation });
+    }
+
+    const baseMetrics = computeMetrics(evaluatedResults);
+    let metrics = { ...baseMetrics, autoEvalStats: stats };
+
+    if (task.metricIds.length > 0) {
+      const metricConfigs = MetricRepo.getByIds(task.metricIds);
+      const { metricResults, weightedTotalScore } = computeMetricResults(
+        metricConfigs,
+        baseMetrics,
+        evaluatedResults,
+      );
+      metrics = {
+        ...metrics,
+        weightedTotalScore,
+        metricResults,
+        metricConfigs,
+      };
+    }
+
+    EvaluationRepo.update(id, { metrics });
+
+    LogRepo.create({
+      level: 'info',
+      category: 'evaluation',
+      message: `重新评估任务：${task.name}，自动评估完成 ${stats.autoJudgmentCount} 条`,
+      affectedScope: `评测任务 ${id}`,
+    });
+
+    return EvaluationRepo.getById(id);
+  },
+
+  applyAutoJudgment(resultId: string): QAResult | undefined {
+    const result = QARepo.getById(resultId);
+    if (!result || !result.autoEvaluation) return undefined;
+
+    const updated = QARepo.update(resultId, {
+      humanJudgment: result.autoEvaluation.suggestedJudgment,
+    });
+
+    LogRepo.create({
+      level: 'info',
+      category: 'evaluation',
+      message: `应用自动判定结果：${result.autoEvaluation.suggestedJudgment}`,
+      affectedScope: `评测结果 ${resultId}`,
+    });
+
+    return updated;
+  },
+
+  batchApplyAutoJudgment(taskId: string): { updated: number; total: number } {
+    const results = QARepo.listByTask(taskId);
+    let updated = 0;
+
+    for (const r of results) {
+      if (r.autoEvaluation && !r.humanJudgment) {
+        QARepo.update(r.id, {
+          humanJudgment: r.autoEvaluation.suggestedJudgment,
+        });
+        updated++;
+      }
+    }
+
+    LogRepo.create({
+      level: 'info',
+      category: 'evaluation',
+      message: `批量应用自动判定：任务 ${taskId}，更新 ${updated}/${results.length} 条`,
+      affectedScope: `评测任务 ${taskId}`,
+    });
+
+    return { updated, total: results.length };
   },
 };

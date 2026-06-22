@@ -15,6 +15,7 @@ export function exportEvaluationReport(task: EvaluationTask, results: QAResult[]
       versionId: task.versionId,
       retrievalParams: task.retrievalParams,
       modelConfig: task.modelConfig,
+      metricIds: task.metricIds,
       status: task.status,
       metrics: task.metrics,
       createdAt: task.createdAt,

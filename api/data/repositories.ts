@@ -7,6 +7,7 @@ import {
   QAResult,
   EvaluationTask,
   LogEntry,
+  Metric,
 } from '../../shared/types.js';
 import {
   PATHS,
@@ -25,6 +26,7 @@ const CHUNKS_FILE = path.join(PATHS.data, 'chunks.json');
 const QA_FILE = path.join(PATHS.data, 'qa.json');
 const EVAL_FILE = path.join(PATHS.data, 'evaluations.json');
 const LOG_FILE = path.join(PATHS.data, 'logs.json');
+const METRICS_FILE = PATHS.metrics;
 
 function generateId(prefix: string): string {
   return `${prefix}_${uuidv4().replace(/-/g, '').slice(0, 16)}`;
@@ -252,5 +254,44 @@ export const LogRepo = {
   },
   clear(): void {
     writeJsonFile(LOG_FILE, []);
+  },
+};
+
+export const MetricRepo = {
+  list(): Metric[] {
+    return readJsonFile<Metric[]>(METRICS_FILE, []);
+  },
+  getById(id: string): Metric | undefined {
+    return this.list().find((m) => m.id === id);
+  },
+  getByIds(ids: string[]): Metric[] {
+    const set = new Set(ids);
+    return this.list().filter((m) => set.has(m.id));
+  },
+  create(m: Omit<Metric, 'id' | 'createdAt' | 'updatedAt'>): Metric {
+    const now = Date.now();
+    const full: Metric = {
+      ...m,
+      id: generateId('mtc'),
+      createdAt: now,
+      updatedAt: now,
+    };
+    appendJsonFile<Metric>(METRICS_FILE, full);
+    return full;
+  },
+  update(id: string, patch: Partial<Metric>): Metric | undefined {
+    const all = this.list();
+    const idx = all.findIndex((m) => m.id === id);
+    if (idx === -1) return undefined;
+    all[idx] = { ...all[idx], ...patch, updatedAt: Date.now() };
+    writeJsonFile(METRICS_FILE, all);
+    return all[idx];
+  },
+  delete(id: string): boolean {
+    const all = this.list();
+    const filtered = all.filter((m) => m.id !== id);
+    if (filtered.length === all.length) return false;
+    writeJsonFile(METRICS_FILE, filtered);
+    return true;
   },
 };

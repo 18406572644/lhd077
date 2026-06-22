@@ -18,6 +18,7 @@ export const PATHS = {
   qa: path.join(DATA_DIR, 'qa'),
   evaluations: path.join(DATA_DIR, 'evaluations'),
   logs: path.join(DATA_DIR, 'logs'),
+  metrics: path.join(DATA_DIR, 'metrics.json'),
 };
 
 export function ensureDir(dir: string): void {
