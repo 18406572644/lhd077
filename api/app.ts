@@ -14,6 +14,7 @@ import compareRoutes from './routes/compare.js'
 import logRoutes from './routes/logs.js'
 import metricsRoutes from './routes/metrics.js'
 import backupRoutes from './routes/backup.js'
+import scheduledEvaluationRoutes from './routes/scheduledEvaluation.js'
 import { ensureAllDirs } from './data/storage.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -35,6 +36,7 @@ app.use('/api/compare', compareRoutes)
 app.use('/api/logs', logRoutes)
 app.use('/api/metrics', metricsRoutes)
 app.use('/api/backup', backupRoutes)
+app.use('/api/scheduled-evaluation', scheduledEvaluationRoutes)
 
 app.use(
   '/api/health',

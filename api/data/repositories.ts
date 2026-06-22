@@ -8,6 +8,10 @@ import {
   EvaluationTask,
   LogEntry,
   Metric,
+  ScheduledEvaluationTask,
+  ScheduledExecutionRecord,
+  ScheduledAlert,
+  NotificationMessage,
 } from '../../shared/types.js';
 import {
   PATHS,
@@ -26,6 +30,10 @@ const QA_FILE = path.join(PATHS.data, 'qa.json');
 const EVAL_FILE = path.join(PATHS.data, 'evaluations.json');
 const LOG_FILE = path.join(PATHS.data, 'logs.json');
 const METRICS_FILE = PATHS.metrics;
+const SCHEDULED_TASKS_FILE = PATHS.scheduledTasks;
+const SCHEDULED_EXECUTIONS_FILE = PATHS.scheduledExecutions;
+const SCHEDULED_ALERTS_FILE = PATHS.scheduledAlerts;
+const NOTIFICATIONS_FILE = PATHS.notifications;
 
 function generateId(prefix: string): string {
   return `${prefix}_${uuidv4().replace(/-/g, '').slice(0, 16)}`;
@@ -406,5 +414,157 @@ export const MetricRepo = {
 
     writeJsonFile(METRICS_FILE, filtered);
     return true;
+  },
+};
+
+export const ScheduledTaskRepo = {
+  list(): ScheduledEvaluationTask[] {
+    return readJsonFile<ScheduledEvaluationTask[]>(SCHEDULED_TASKS_FILE, []);
+  },
+  getById(id: string): ScheduledEvaluationTask | undefined {
+    return this.list().find((t) => t.id === id);
+  },
+  listActive(): ScheduledEvaluationTask[] {
+    return this.list().filter((t) => t.status === 'active');
+  },
+  create(
+    t: Omit<ScheduledEvaluationTask, 'id' | 'createdAt' | 'updatedAt' | 'consecutiveAlertCount' | 'status'> & {
+      status?: ScheduledEvaluationTask['status'];
+    },
+  ): ScheduledEvaluationTask {
+    const now = Date.now();
+    const full: ScheduledEvaluationTask = {
+      ...t,
+      id: generateId('sch'),
+      status: t.status ?? 'active',
+      consecutiveAlertCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    appendJsonFile<ScheduledEvaluationTask>(SCHEDULED_TASKS_FILE, full);
+    return full;
+  },
+  update(
+    id: string,
+    patch: Partial<ScheduledEvaluationTask>,
+  ): ScheduledEvaluationTask | undefined {
+    const all = this.list();
+    const idx = all.findIndex((t) => t.id === id);
+    if (idx === -1) return undefined;
+    all[idx] = { ...all[idx], ...patch, updatedAt: Date.now() };
+    writeJsonFile(SCHEDULED_TASKS_FILE, all);
+    return all[idx];
+  },
+  delete(id: string): boolean {
+    const all = this.list();
+    const filtered = all.filter((t) => t.id !== id);
+    if (filtered.length === all.length) return false;
+    writeJsonFile(SCHEDULED_TASKS_FILE, filtered);
+    return true;
+  },
+};
+
+export const ScheduledExecutionRepo = {
+  list(): ScheduledExecutionRecord[] {
+    return readJsonFile<ScheduledExecutionRecord[]>(SCHEDULED_EXECUTIONS_FILE, []);
+  },
+  getById(id: string): ScheduledExecutionRecord | undefined {
+    return this.list().find((r) => r.id === id);
+  },
+  listByScheduledTask(scheduledTaskId: string): ScheduledExecutionRecord[] {
+    return this.list()
+      .filter((r) => r.scheduledTaskId === scheduledTaskId)
+      .sort((a, b) => b.triggeredAt - a.triggeredAt);
+  },
+  create(r: Omit<ScheduledExecutionRecord, 'id'>): ScheduledExecutionRecord {
+    const full: ScheduledExecutionRecord = {
+      ...r,
+      id: generateId('sex'),
+    };
+    appendJsonFile<ScheduledExecutionRecord>(SCHEDULED_EXECUTIONS_FILE, full);
+    return full;
+  },
+  update(
+    id: string,
+    patch: Partial<ScheduledExecutionRecord>,
+  ): ScheduledExecutionRecord | undefined {
+    const all = this.list();
+    const idx = all.findIndex((r) => r.id === id);
+    if (idx === -1) return undefined;
+    all[idx] = { ...all[idx], ...patch };
+    writeJsonFile(SCHEDULED_EXECUTIONS_FILE, all);
+    return all[idx];
+  },
+};
+
+export const ScheduledAlertRepo = {
+  list(): ScheduledAlert[] {
+    return readJsonFile<ScheduledAlert[]>(SCHEDULED_ALERTS_FILE, []);
+  },
+  getById(id: string): ScheduledAlert | undefined {
+    return this.list().find((a) => a.id === id);
+  },
+  listByScheduledTask(scheduledTaskId: string): ScheduledAlert[] {
+    return this.list()
+      .filter((a) => a.scheduledTaskId === scheduledTaskId)
+      .sort((a, b) => b.triggeredAt - a.triggeredAt);
+  },
+  listByExecution(executionId: string): ScheduledAlert[] {
+    return this.list().filter((a) => a.executionId === executionId);
+  },
+  listUnacknowledged(): ScheduledAlert[] {
+    return this.list()
+      .filter((a) => !a.acknowledged)
+      .sort((a, b) => b.triggeredAt - a.triggeredAt);
+  },
+  create(a: Omit<ScheduledAlert, 'id' | 'triggeredAt' | 'acknowledged'>): ScheduledAlert {
+    const full: ScheduledAlert = {
+      ...a,
+      id: generateId('alt'),
+      triggeredAt: Date.now(),
+      acknowledged: false,
+    };
+    appendJsonFile<ScheduledAlert>(SCHEDULED_ALERTS_FILE, full);
+    return full;
+  },
+  acknowledge(id: string): ScheduledAlert | undefined {
+    const all = this.list();
+    const idx = all.findIndex((a) => a.id === id);
+    if (idx === -1) return undefined;
+    all[idx] = { ...all[idx], acknowledged: true };
+    writeJsonFile(SCHEDULED_ALERTS_FILE, all);
+    return all[idx];
+  },
+  acknowledgeByTask(scheduledTaskId: string): number {
+    const all = this.list();
+    let updated = 0;
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].scheduledTaskId === scheduledTaskId && !all[i].acknowledged) {
+        all[i] = { ...all[i], acknowledged: true };
+        updated++;
+      }
+    }
+    if (updated > 0) writeJsonFile(SCHEDULED_ALERTS_FILE, all);
+    return updated;
+  },
+};
+
+export const NotificationRepo = {
+  list(): NotificationMessage[] {
+    return readJsonFile<NotificationMessage[]>(NOTIFICATIONS_FILE, []);
+  },
+  listByScheduledTask(scheduledTaskId: string): NotificationMessage[] {
+    return this.list()
+      .filter((n) => n.scheduledTaskId === scheduledTaskId)
+      .sort((a, b) => b.sentAt - a.sentAt);
+  },
+  create(n: Omit<NotificationMessage, 'id' | 'sentAt'>): NotificationMessage {
+    const full: NotificationMessage = {
+      ...n,
+      id: generateId('ntf'),
+      sentAt: Date.now(),
+    };
+    appendJsonFile<NotificationMessage>(NOTIFICATIONS_FILE, full);
+    return full;
   },
 };

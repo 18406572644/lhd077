@@ -291,3 +291,122 @@ export interface RestoreResult {
   rollbackBackupId?: string;
   restoredAt: number;
 }
+
+export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly' | 'cron';
+
+export interface ScheduleConfig {
+  frequency: ScheduleFrequency;
+  cronExpression?: string;
+  timeOfDay?: string;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+}
+
+export type NotificationType = 'desktop' | 'email';
+
+export interface NotificationConfig {
+  enabled: boolean;
+  types: NotificationType[];
+  emailAddresses?: string[];
+  onSuccess?: boolean;
+  onFailure?: boolean;
+  onAlert?: boolean;
+}
+
+export interface AlertThresholdConfig {
+  accuracyThreshold?: number;
+  partialRateThreshold?: number;
+  wrongRateThreshold?: number;
+  weightedScoreThreshold?: number;
+  consecutiveFailures?: number;
+}
+
+export type ScheduledTaskStatus = 'active' | 'paused' | 'disabled';
+
+export interface ScheduledEvaluationTask {
+  id: string;
+  name: string;
+  description?: string;
+  baseEvaluationTaskId?: string;
+  testSet: TestCase[];
+  versionId: string;
+  retrievalParams: RetrievalParams;
+  modelConfig?: ModelConfig;
+  metricIds: string[];
+  schedule: ScheduleConfig;
+  notification: NotificationConfig;
+  alertThresholds: AlertThresholdConfig;
+  status: ScheduledTaskStatus;
+  lastRunAt?: number;
+  nextRunAt?: number;
+  lastRunResultId?: string;
+  lastRunMetrics?: EvaluationMetrics;
+  consecutiveAlertCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ScheduledExecutionRecord {
+  id: string;
+  scheduledTaskId: string;
+  evaluationTaskId: string;
+  triggeredAt: number;
+  startedAt: number;
+  finishedAt?: number;
+  status: TaskStatus;
+  metrics?: EvaluationMetrics;
+  alerts?: ScheduledAlert[];
+  errorMessage?: string;
+}
+
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+
+export interface ScheduledAlert {
+  id: string;
+  scheduledTaskId: string;
+  executionId: string;
+  severity: AlertSeverity;
+  type: 'threshold_breached' | 'execution_failed' | 'consecutive_failures';
+  message: string;
+  metricName?: string;
+  expectedValue?: number;
+  actualValue?: number;
+  triggeredAt: number;
+  acknowledged: boolean;
+}
+
+export interface NotificationMessage {
+  id: string;
+  type: NotificationType;
+  subject: string;
+  body: string;
+  scheduledTaskId?: string;
+  executionId?: string;
+  sentAt: number;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export interface TrendDataPoint {
+  timestamp: number;
+  date: string;
+  taskId: string;
+  taskName: string;
+  metrics: EvaluationMetrics;
+}
+
+export interface TrendReport {
+  scheduledTaskId: string;
+  scheduledTaskName: string;
+  dataPoints: TrendDataPoint[];
+  startDate: number;
+  endDate: number;
+  overallStats: {
+    avgAccuracy: number;
+    minAccuracy: number;
+    maxAccuracy: number;
+    trend: 'improving' | 'declining' | 'stable';
+    totalRuns: number;
+    alertCount: number;
+  };
+}

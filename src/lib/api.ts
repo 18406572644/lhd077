@@ -20,6 +20,14 @@ import type {
   BackupInfo,
   BackupListResult,
   RestoreResult,
+  ScheduledEvaluationTask,
+  ScheduledExecutionRecord,
+  ScheduledAlert,
+  NotificationMessage,
+  TrendReport,
+  ScheduleConfig,
+  NotificationConfig,
+  AlertThresholdConfig,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -383,6 +391,155 @@ export const api = {
       return request("/backup/import", {
         method: "POST",
         body: fd,
+      });
+    },
+  },
+
+  scheduledEvaluation: {
+    listTasks(): Promise<ScheduledEvaluationTask[]> {
+      return request<ScheduledEvaluationTask[]>("/scheduled-evaluation/tasks");
+    },
+    getTask(id: string): Promise<ScheduledEvaluationTask> {
+      return request<ScheduledEvaluationTask>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}`,
+      );
+    },
+    createTask(params: {
+      name: string;
+      description?: string;
+      testSet: TestCase[];
+      testSetFile?: File;
+      versionId: string;
+      retrievalParams?: Partial<RetrievalParams>;
+      modelConfig?: ModelConfig;
+      metricIds?: string[];
+      schedule: ScheduleConfig;
+      notification: NotificationConfig;
+      alertThresholds: AlertThresholdConfig;
+    }): Promise<ScheduledEvaluationTask> {
+      const fd = new FormData();
+      fd.append("name", params.name);
+      fd.append("versionId", params.versionId);
+      fd.append("schedule", JSON.stringify(params.schedule));
+      fd.append("notification", JSON.stringify(params.notification));
+      fd.append("alertThresholds", JSON.stringify(params.alertThresholds));
+      if (params.description) fd.append("description", params.description);
+      if (params.testSetFile) {
+        fd.append("testSet", params.testSetFile);
+      } else if (params.testSet) {
+        fd.append("testSet", JSON.stringify(params.testSet));
+      }
+      if (params.retrievalParams)
+        fd.append("retrievalParams", JSON.stringify(params.retrievalParams));
+      if (params.modelConfig)
+        fd.append("modelConfig", JSON.stringify(params.modelConfig));
+      if (params.metricIds)
+        fd.append("metricIds", JSON.stringify(params.metricIds));
+      return request<ScheduledEvaluationTask>("/scheduled-evaluation/tasks", {
+        method: "POST",
+        body: fd,
+      });
+    },
+    updateTask(
+      id: string,
+      patch: Partial<{
+        name: string;
+        description: string;
+        schedule: ScheduleConfig;
+        notification: NotificationConfig;
+        alertThresholds: AlertThresholdConfig;
+        status: ScheduledEvaluationTask["status"];
+      }>,
+    ): Promise<ScheduledEvaluationTask> {
+      return request<ScheduledEvaluationTask>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(patch),
+        },
+      );
+    },
+    deleteTask(id: string): Promise<{ success: boolean }> {
+      return request(`/scheduled-evaluation/tasks/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    },
+    pauseTask(id: string): Promise<ScheduledEvaluationTask> {
+      return request<ScheduledEvaluationTask>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/pause`,
+        {
+          method: "POST",
+        },
+      );
+    },
+    resumeTask(id: string): Promise<ScheduledEvaluationTask> {
+      return request<ScheduledEvaluationTask>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/resume`,
+        {
+          method: "POST",
+        },
+      );
+    },
+    runTaskNow(id: string): Promise<ScheduledExecutionRecord> {
+      return request<ScheduledExecutionRecord>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/run`,
+        {
+          method: "POST",
+        },
+      );
+    },
+    listExecutions(id: string): Promise<ScheduledExecutionRecord[]> {
+      return request<ScheduledExecutionRecord[]>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/executions`,
+      );
+    },
+    getTrendReport(id: string, days?: number): Promise<TrendReport> {
+      const q = days ? `?days=${days}` : "";
+      return request<TrendReport>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/trend${q}`,
+      );
+    },
+    listNotifications(id: string): Promise<NotificationMessage[]> {
+      return request<NotificationMessage[]>(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(id)}/notifications`,
+      );
+    },
+    listAlerts(params?: {
+      scheduledTaskId?: string;
+      onlyUnacknowledged?: boolean;
+    }): Promise<ScheduledAlert[]> {
+      const qs = new URLSearchParams();
+      if (params?.scheduledTaskId) qs.set("scheduledTaskId", params.scheduledTaskId);
+      if (params?.onlyUnacknowledged) qs.set("onlyUnacknowledged", "true");
+      const q = qs.toString() ? `?${qs.toString()}` : "";
+      return request<ScheduledAlert[]>(`/scheduled-evaluation/alerts${q}`);
+    },
+    acknowledgeAlert(id: string): Promise<ScheduledAlert> {
+      return request<ScheduledAlert>(
+        `/scheduled-evaluation/alerts/${encodeURIComponent(id)}/acknowledge`,
+        {
+          method: "POST",
+        },
+      );
+    },
+    acknowledgeAllAlerts(taskId: string): Promise<{ success: boolean; acknowledged: number }> {
+      return request(
+        `/scheduled-evaluation/tasks/${encodeURIComponent(taskId)}/alerts/acknowledge-all`,
+        {
+          method: "POST",
+        },
+      );
+    },
+    validateCron(cronExpression: string): Promise<{ valid: boolean; message: string }> {
+      return request("/scheduled-evaluation/validate-cron", {
+        method: "POST",
+        body: JSON.stringify({ cronExpression }),
+      });
+    },
+    validateNotification(config: NotificationConfig): Promise<{ valid: boolean; errors: string[] }> {
+      return request("/scheduled-evaluation/validate-notification", {
+        method: "POST",
+        body: JSON.stringify(config),
       });
     },
   },

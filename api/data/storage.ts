@@ -21,6 +21,10 @@ export const PATHS = {
   evaluations: path.join(DATA_DIR, 'evaluations'),
   logs: path.join(DATA_DIR, 'logs'),
   metrics: path.join(DATA_DIR, 'metrics.json'),
+  scheduledTasks: path.join(DATA_DIR, 'scheduled_tasks.json'),
+  scheduledExecutions: path.join(DATA_DIR, 'scheduled_executions.json'),
+  scheduledAlerts: path.join(DATA_DIR, 'scheduled_alerts.json'),
+  notifications: path.join(DATA_DIR, 'notifications.json'),
 } as const;
 
 const DIR_PATHS = new Set([
