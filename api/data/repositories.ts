@@ -12,6 +12,9 @@ import {
   ScheduledExecutionRecord,
   ScheduledAlert,
   NotificationMessage,
+  Tag,
+  TagRelation,
+  TaggableType,
 } from '../../shared/types.js';
 import {
   PATHS,
@@ -52,8 +55,9 @@ export const DocumentRepo = {
   listByVersion(versionId: string): KnowledgeDocument[] {
     return this.list().filter((d) => d.versionId === versionId);
   },
-  create(doc: Omit<KnowledgeDocument, 'id' | 'createdAt'>): KnowledgeDocument {
+  create(doc: Omit<KnowledgeDocument, 'id' | 'createdAt'> & { tagIds?: string[] }): KnowledgeDocument {
     const full: KnowledgeDocument = {
+      tagIds: [],
       ...doc,
       id: generateId('doc'),
       createdAt: Date.now(),
@@ -62,10 +66,11 @@ export const DocumentRepo = {
     return full;
   },
   bulkCreate(
-    docs: Array<Omit<KnowledgeDocument, 'id' | 'createdAt'>>,
+    docs: Array<Omit<KnowledgeDocument, 'id' | 'createdAt'> & { tagIds?: string[] }>,
   ): KnowledgeDocument[] {
     const existing = this.list();
     const created = docs.map((d) => ({
+      tagIds: [],
       ...d,
       id: generateId('doc'),
       createdAt: Date.now(),
@@ -176,8 +181,9 @@ export const QARepo = {
   listByTask(taskId: string): QAResult[] {
     return this.list().filter((r) => r.taskId === taskId);
   },
-  create(r: Omit<QAResult, 'id' | 'createdAt'>): QAResult {
+  create(r: Omit<QAResult, 'id' | 'createdAt'> & { tagIds?: string[] }): QAResult {
     const full: QAResult = {
+      tagIds: [],
       ...r,
       id: generateId('qa'),
       createdAt: Date.now(),
@@ -185,9 +191,10 @@ export const QARepo = {
     appendJsonFile<QAResult>(QA_FILE, full);
     return full;
   },
-  bulkCreate(results: Array<Omit<QAResult, 'id' | 'createdAt'>>): QAResult[] {
+  bulkCreate(results: Array<Omit<QAResult, 'id' | 'createdAt'> & { tagIds?: string[] }>): QAResult[] {
     const existing = this.list();
     const created = results.map((r) => ({
+      tagIds: [],
       ...r,
       id: generateId('qa'),
       createdAt: Date.now(),
@@ -213,11 +220,13 @@ export const EvaluationRepo = {
     return this.list().find((t) => t.id === id);
   },
   create(
-    t: Omit<EvaluationTask, 'id' | 'createdAt' | 'status' | 'resultIds'> & {
+    t: Omit<EvaluationTask, 'id' | 'createdAt' | 'status' | 'resultIds' | 'tagIds'> & {
       status?: EvaluationTask['status'];
+      tagIds?: string[];
     },
   ): EvaluationTask {
     const full: EvaluationTask = {
+      tagIds: [],
       ...t,
       id: generateId('eval'),
       createdAt: Date.now(),
@@ -566,5 +575,335 @@ export const NotificationRepo = {
     };
     appendJsonFile<NotificationMessage>(NOTIFICATIONS_FILE, full);
     return full;
+  },
+};
+
+const TAGS_FILE = PATHS.tags;
+const TAG_RELATIONS_FILE = PATHS.tagRelations;
+
+function validateTagData(data: Partial<Tag>): void {
+  if (data.name !== undefined) {
+    if (typeof data.name !== 'string') {
+      throw new Error('标签名称必须是字符串');
+    }
+    if (data.name.length === 0 || data.name.length > 50) {
+      throw new Error('标签名称长度必须在 1-50 个字符之间');
+    }
+  }
+  if (data.color !== undefined) {
+    if (typeof data.color !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+      throw new Error('标签颜色必须是有效的十六进制颜色值');
+    }
+  }
+  if (data.description !== undefined && data.description !== null) {
+    if (typeof data.description !== 'string') {
+      throw new Error('标签描述必须是字符串');
+    }
+    if (data.description.length > 200) {
+      throw new Error('标签描述不能超过 200 个字符');
+    }
+  }
+  if (data.parentId !== undefined && data.parentId !== null) {
+    if (typeof data.parentId !== 'string') {
+      throw new Error('父标签ID必须是字符串');
+    }
+  }
+}
+
+export const TagRepo = {
+  list(): Tag[] {
+    return readJsonFile<Tag[]>(TAGS_FILE, []);
+  },
+  getById(id: string): Tag | undefined {
+    return this.list().find((t) => t.id === id);
+  },
+  getByIds(ids: string[]): Tag[] {
+    const set = new Set(ids.filter((id) => id && typeof id === 'string'));
+    return this.list().filter((t) => set.has(t.id));
+  },
+  listByParent(parentId: string | null): Tag[] {
+    return this.list().filter((t) => t.parentId === parentId);
+  },
+  getRootTags(): Tag[] {
+    return this.list().filter((t) => t.parentId === null);
+  },
+  getChildren(parentId: string): Tag[] {
+    return this.list().filter((t) => t.parentId === parentId);
+  },
+  getAllDescendants(parentId: string): Tag[] {
+    const all = this.list();
+    const result: Tag[] = [];
+    const stack = [parentId];
+    while (stack.length > 0) {
+      const currentId = stack.pop()!;
+      const children = all.filter((t) => t.parentId === currentId);
+      result.push(...children);
+      children.forEach((c) => stack.push(c.id));
+    }
+    return result;
+  },
+  getAncestors(tagId: string): Tag[] {
+    const all = this.list();
+    const result: Tag[] = [];
+    let current = all.find((t) => t.id === tagId);
+    while (current && current.parentId) {
+      const parent = all.find((t) => t.id === current!.parentId);
+      if (parent) {
+        result.unshift(parent);
+        current = parent;
+      } else {
+        break;
+      }
+    }
+    return result;
+  },
+  create(t: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>): Tag {
+    validateTagData(t);
+
+    if (t.parentId) {
+      const parent = this.getById(t.parentId);
+      if (!parent) {
+        throw new Error('父标签不存在');
+      }
+    }
+
+    const existing = this.list();
+    const duplicate = existing.find(
+      (item) =>
+        item.name.toLowerCase() === t.name.toLowerCase() &&
+        item.parentId === t.parentId,
+    );
+    if (duplicate) {
+      throw new Error('同级标签中已存在同名标签');
+    }
+
+    const now = Date.now();
+    const full: Tag = {
+      ...t,
+      id: generateId('tag'),
+      createdAt: now,
+      updatedAt: now,
+    };
+    appendJsonFile<Tag>(TAGS_FILE, full);
+    return full;
+  },
+  update(id: string, patch: Partial<Tag>): Tag | undefined {
+    const all = this.list();
+    const idx = all.findIndex((t) => t.id === id);
+    if (idx === -1) return undefined;
+
+    validateTagData(patch);
+
+    if (patch.parentId !== undefined && patch.parentId !== null) {
+      const parent = this.getById(patch.parentId);
+      if (!parent) {
+        throw new Error('父标签不存在');
+      }
+      if (patch.parentId === id) {
+        throw new Error('不能将标签设为自己的子标签');
+      }
+      const descendants = this.getAllDescendants(id);
+      if (descendants.some((d) => d.id === patch.parentId)) {
+        throw new Error('不能将标签设为其后代标签的子标签');
+      }
+    }
+
+    if (patch.name !== undefined) {
+      const targetParentId =
+        patch.parentId !== undefined ? patch.parentId : all[idx].parentId;
+      const duplicate = all.find(
+        (item, i) =>
+          i !== idx &&
+          item.name.toLowerCase() === patch.name!.toLowerCase() &&
+          item.parentId === targetParentId,
+      );
+      if (duplicate) {
+        throw new Error('同级标签中已存在同名标签');
+      }
+    }
+
+    const updated = { ...all[idx], ...patch, updatedAt: Date.now() };
+    all[idx] = updated;
+    writeJsonFile(TAGS_FILE, all);
+    return all[idx];
+  },
+  delete(id: string): { success: boolean; deletedCount: number } {
+    const all = this.list();
+    const tag = all.find((t) => t.id === id);
+    if (!tag) return { success: false, deletedCount: 0 };
+
+    const descendants = this.getAllDescendants(id);
+    const toDeleteIds = new Set([id, ...descendants.map((d) => d.id)]);
+    const deletedCount = toDeleteIds.size;
+
+    const filtered = all.filter((t) => !toDeleteIds.has(t.id));
+    writeJsonFile(TAGS_FILE, filtered);
+
+    const relations = TagRelationRepo.list();
+    const filteredRelations = relations.filter((r) => !toDeleteIds.has(r.tagId));
+    writeJsonFile(TAG_RELATIONS_FILE, filteredRelations);
+
+    return { success: true, deletedCount };
+  },
+};
+
+export const TagRelationRepo = {
+  list(): TagRelation[] {
+    return readJsonFile<TagRelation[]>(TAG_RELATIONS_FILE, []);
+  },
+  getById(id: string): TagRelation | undefined {
+    return this.list().find((r) => r.id === id);
+  },
+  listByTag(tagId: string): TagRelation[] {
+    return this.list().filter((r) => r.tagId === tagId);
+  },
+  listByTarget(targetType: TaggableType, targetId: string): TagRelation[] {
+    return this.list().filter(
+      (r) => r.targetType === targetType && r.targetId === targetId,
+    );
+  },
+  listByTags(tagIds: string[]): TagRelation[] {
+    const set = new Set(tagIds.filter((id) => id && typeof id === 'string'));
+    return this.list().filter((r) => set.has(r.tagId));
+  },
+  listByTagAndType(
+    tagId: string,
+    targetType: TaggableType,
+  ): TagRelation[] {
+    return this.list().filter(
+      (r) => r.tagId === tagId && r.targetType === targetType,
+    );
+  },
+  getTargetIdsByTags(
+    tagIds: string[],
+    targetType: TaggableType,
+    matchAll: boolean = false,
+  ): string[] {
+    const relations = this.list().filter(
+      (r) => r.targetType === targetType && tagIds.includes(r.tagId),
+    );
+
+    if (matchAll) {
+      const targetTagMap = new Map<string, Set<string>>();
+      relations.forEach((r) => {
+        if (!targetTagMap.has(r.targetId)) {
+          targetTagMap.set(r.targetId, new Set());
+        }
+        targetTagMap.get(r.targetId)!.add(r.tagId);
+      });
+      return Array.from(targetTagMap.entries())
+        .filter(([, tags]) => tagIds.every((t) => tags.has(t)))
+        .map(([targetId]) => targetId);
+    }
+
+    return Array.from(new Set(relations.map((r) => r.targetId)));
+  },
+  addTagToTarget(
+    tagId: string,
+    targetType: TaggableType,
+    targetId: string,
+  ): TagRelation {
+    const existing = this.list();
+    const exists = existing.find(
+      (r) =>
+        r.tagId === tagId &&
+        r.targetType === targetType &&
+        r.targetId === targetId,
+    );
+    if (exists) return exists;
+
+    const full: TagRelation = {
+      id: generateId('tgr'),
+      tagId,
+      targetType,
+      targetId,
+      createdAt: Date.now(),
+    };
+    appendJsonFile<TagRelation>(TAG_RELATIONS_FILE, full);
+
+    this.syncTagIds(targetType, targetId);
+
+    return full;
+  },
+  addTagsToTarget(
+    tagIds: string[],
+    targetType: TaggableType,
+    targetId: string,
+  ): TagRelation[] {
+    const created: TagRelation[] = [];
+    for (const tagId of tagIds) {
+      const rel = this.addTagToTarget(tagId, targetType, targetId);
+      created.push(rel);
+    }
+    return created;
+  },
+  removeTagFromTarget(
+    tagId: string,
+    targetType: TaggableType,
+    targetId: string,
+  ): boolean {
+    const all = this.list();
+    const filtered = all.filter(
+      (r) =>
+        !(
+          r.tagId === tagId &&
+          r.targetType === targetType &&
+          r.targetId === targetId
+        ),
+    );
+    if (filtered.length === all.length) return false;
+    writeJsonFile(TAG_RELATIONS_FILE, filtered);
+
+    this.syncTagIds(targetType, targetId);
+
+    return true;
+  },
+  setTagsForTarget(
+    tagIds: string[],
+    targetType: TaggableType,
+    targetId: string,
+  ): void {
+    const all = this.list();
+    const filtered = all.filter(
+      (r) => !(r.targetType === targetType && r.targetId === targetId),
+    );
+    const now = Date.now();
+    const newRelations = tagIds.map((tagId) => ({
+      id: generateId('tgr'),
+      tagId,
+      targetType,
+      targetId,
+      createdAt: now,
+    }));
+    writeJsonFile(TAG_RELATIONS_FILE, [...filtered, ...newRelations]);
+
+    this.syncTagIds(targetType, targetId);
+  },
+  syncTagIds(targetType: TaggableType, targetId: string): void {
+    const relations = this.listByTarget(targetType, targetId);
+    const tagIds = relations.map((r) => r.tagId);
+
+    try {
+      if (targetType === 'document') {
+        DocumentRepo.update(targetId, { tagIds } as Partial<KnowledgeDocument>);
+      } else if (targetType === 'qa') {
+        QARepo.update(targetId, { tagIds } as Partial<QAResult>);
+      } else if (targetType === 'evaluation') {
+        EvaluationRepo.update(targetId, { tagIds } as Partial<EvaluationTask>);
+      }
+    } catch {
+      // 同步失败不影响标签关系本身的正确性
+    }
+  },
+  removeByTarget(targetType: TaggableType, targetId: string): number {
+    const all = this.list();
+    const filtered = all.filter(
+      (r) => !(r.targetType === targetType && r.targetId === targetId),
+    );
+    const removed = all.length - filtered.length;
+    if (removed > 0) {
+      writeJsonFile(TAG_RELATIONS_FILE, filtered);
+    }
+    return removed;
   },
 };

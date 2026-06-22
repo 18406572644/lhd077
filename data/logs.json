@@ -318,5 +318,173 @@
     "affectedScope": "问答结果 qa_84099ec9a46e41d1",
     "id": "log_3583ea15d178479c",
     "timestamp": 1782088827067
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "删除文档：çµåç¥è¯åº",
+    "affectedScope": "文档 doc_993969c1a8b5497a，所属版本 ver_b3e7b54dd47a475e",
+    "id": "log_8c8670f568464810",
+    "timestamp": 1782095352492
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功1条，重复0条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_c742e5ecfc524d33",
+    "id": "log_143db777bb524db3",
+    "timestamp": 1782095380345
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建定时评测任务：测试",
+    "details": {
+      "schedule": "每天 10:53 执行"
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_4fc6405d7e7542e7",
+    "timestamp": 1782096685883
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建评测任务：测试 - 2026/6/22 10:51:27（2条用例）",
+    "affectedScope": "评测任务 eval_277bcdb064134a94",
+    "id": "log_bdcff91dcbca4262",
+    "timestamp": 1782096688033
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "开始执行评测任务：测试 - 2026/6/22 10:51:27",
+    "affectedScope": "评测任务 eval_277bcdb064134a94",
+    "id": "log_0c39ed8740754cbb",
+    "timestamp": 1782096688054
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "评测任务完成：测试 - 2026/6/22 10:51:27，准确率 100.0%，自动评估完成 2 条",
+    "affectedScope": "评测任务 eval_277bcdb064134a94",
+    "id": "log_168341119d7e4373",
+    "timestamp": 1782096688286
+  },
+  {
+    "level": "info",
+    "category": "system",
+    "message": "[桌面通知] [评测完成] 测试",
+    "details": {
+      "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:51:28"
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_21cb148d8c39411a",
+    "timestamp": 1782096688314
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "定时评测任务执行完成：测试",
+    "details": {
+      "accuracy": 1,
+      "alertsCount": 0
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_0a1fc440e0454fb7",
+    "timestamp": 1782096688324
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建评测任务：测试 - 2026/6/22 10:51:37（2条用例）",
+    "affectedScope": "评测任务 eval_a7fcb99a4a124f01",
+    "id": "log_47ad069ae457428f",
+    "timestamp": 1782096697219
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "开始执行评测任务：测试 - 2026/6/22 10:51:37",
+    "affectedScope": "评测任务 eval_a7fcb99a4a124f01",
+    "id": "log_f49671d5981f4e86",
+    "timestamp": 1782096697242
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "评测任务完成：测试 - 2026/6/22 10:51:37，准确率 100.0%，自动评估完成 2 条",
+    "affectedScope": "评测任务 eval_a7fcb99a4a124f01",
+    "id": "log_6facc58f44bf4343",
+    "timestamp": 1782096697436
+  },
+  {
+    "level": "info",
+    "category": "system",
+    "message": "[桌面通知] [评测完成] 测试",
+    "details": {
+      "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:51:37"
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_e38cac7385424267",
+    "timestamp": 1782096697466
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "定时评测任务执行完成：测试",
+    "details": {
+      "accuracy": 1,
+      "alertsCount": 0
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_f0e17c6db5a34e3e",
+    "timestamp": 1782096697481
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "创建评测任务：测试 - 2026/6/22 10:53:08（2条用例）",
+    "affectedScope": "评测任务 eval_5c563a5ee9cc466c",
+    "id": "log_a61a8b833dcf4f76",
+    "timestamp": 1782096788528
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "开始执行评测任务：测试 - 2026/6/22 10:53:08",
+    "affectedScope": "评测任务 eval_5c563a5ee9cc466c",
+    "id": "log_0d01f9f522ad4a7d",
+    "timestamp": 1782096788558
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "评测任务完成：测试 - 2026/6/22 10:53:08，准确率 100.0%，自动评估完成 2 条",
+    "affectedScope": "评测任务 eval_5c563a5ee9cc466c",
+    "id": "log_27daba53ae884276",
+    "timestamp": 1782096788732
+  },
+  {
+    "level": "info",
+    "category": "system",
+    "message": "[桌面通知] [评测完成] 测试",
+    "details": {
+      "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:53:08"
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_8e18fefedef0490b",
+    "timestamp": 1782096788758
+  },
+  {
+    "level": "info",
+    "category": "evaluation",
+    "message": "定时评测任务执行完成：测试",
+    "details": {
+      "accuracy": 1,
+      "alertsCount": 0
+    },
+    "affectedScope": "定时任务 sch_453aef6eaa3948e3",
+    "id": "log_d5e6c371e74f425f",
+    "timestamp": 1782096788771
   }
 ]

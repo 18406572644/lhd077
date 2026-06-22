@@ -21,6 +21,8 @@ export const PATHS = {
   evaluations: path.join(DATA_DIR, 'evaluations'),
   logs: path.join(DATA_DIR, 'logs'),
   metrics: path.join(DATA_DIR, 'metrics.json'),
+  tags: path.join(DATA_DIR, 'tags.json'),
+  tagRelations: path.join(DATA_DIR, 'tag_relations.json'),
   scheduledTasks: path.join(DATA_DIR, 'scheduled_tasks.json'),
   scheduledExecutions: path.join(DATA_DIR, 'scheduled_executions.json'),
   scheduledAlerts: path.join(DATA_DIR, 'scheduled_alerts.json'),

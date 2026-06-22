@@ -28,6 +28,8 @@ import type {
   ScheduleConfig,
   NotificationConfig,
   AlertThresholdConfig,
+  Tag,
+  TaggableType,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -540,6 +542,77 @@ export const api = {
       return request("/scheduled-evaluation/validate-notification", {
         method: "POST",
         body: JSON.stringify(config),
+      });
+    },
+  },
+
+  tags: {
+    list(): Promise<Tag[]> {
+      return request<Tag[]>("/tags");
+    },
+    getTree(): Promise<Tag[]> {
+      return request<Tag[]>("/tags/tree");
+    },
+    get(id: string): Promise<Tag> {
+      return request<Tag>(`/tags/${encodeURIComponent(id)}`);
+    },
+    create(params: {
+      name: string;
+      color: string;
+      parentId?: string | null;
+      description?: string;
+    }): Promise<Tag> {
+      return request<Tag>("/tags", {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
+    },
+    update(
+      id: string,
+      params: Partial<{
+        name: string;
+        color: string;
+        parentId: string | null;
+        description: string;
+      }>,
+    ): Promise<Tag> {
+      return request<Tag>(`/tags/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: JSON.stringify(params),
+      });
+    },
+    remove(id: string): Promise<{ success: boolean; deletedCount: number }> {
+      return request(`/tags/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    },
+    getAncestors(id: string): Promise<Tag[]> {
+      return request<Tag[]>(`/tags/${encodeURIComponent(id)}/ancestors`);
+    },
+    getDescendants(id: string): Promise<Tag[]> {
+      return request<Tag[]>(`/tags/${encodeURIComponent(id)}/descendants`);
+    },
+    getEntityTags(targetType: TaggableType, targetId: string): Promise<Tag[]> {
+      return request<Tag[]>(`/tags/${targetType}/${encodeURIComponent(targetId)}/tags`);
+    },
+    setEntityTags(
+      targetType: TaggableType,
+      targetId: string,
+      tagIds: string[],
+    ): Promise<{ success: boolean; tagIds: string[] }> {
+      return request(`/tags/${targetType}/${encodeURIComponent(targetId)}/tags`, {
+        method: "PUT",
+        body: JSON.stringify({ tagIds }),
+      });
+    },
+    filterByTags(
+      targetType: TaggableType,
+      tagIds: string[],
+      matchAll?: boolean,
+    ): Promise<{ targetIds: string[] }> {
+      return request(`/tags/filter/${targetType}`, {
+        method: "POST",
+        body: JSON.stringify({ tagIds, matchAll }),
       });
     },
   },

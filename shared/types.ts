@@ -10,6 +10,7 @@ export interface KnowledgeDocument {
   isDuplicate: boolean;
   duplicateOf?: string;
   chunkCount: number;
+  tagIds?: string[];
   createdAt: number;
 }
 
@@ -100,6 +101,7 @@ export interface QAResult {
   humanJudgment?: HumanJudgment;
   humanNote?: string;
   autoEvaluation?: AutoEvaluation;
+  tagIds?: string[];
 }
 
 export type TaskStatus = 'pending' | 'running' | 'done' | 'failed';
@@ -169,6 +171,7 @@ export interface EvaluationTask {
   createdAt: number;
   startedAt?: number;
   finishedAt?: number;
+  tagIds?: string[];
 }
 
 export type LogLevel = 'info' | 'warn' | 'error';
@@ -409,4 +412,24 @@ export interface TrendReport {
     totalRuns: number;
     alertCount: number;
   };
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  parentId: string | null;
+  description?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type TaggableType = 'document' | 'qa' | 'evaluation';
+
+export interface TagRelation {
+  id: string;
+  tagId: string;
+  targetType: TaggableType;
+  targetId: string;
+  createdAt: number;
 }

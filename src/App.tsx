@@ -10,6 +10,7 @@ import Metrics from "@/pages/Metrics";
 import Settings from "@/pages/Settings";
 import ScheduledEvaluation from "@/pages/ScheduledEvaluation";
 import TrendReport from "@/pages/TrendReport";
+import Tags from "@/pages/Tags";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/trend/:id" element={<TrendReport />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/metrics" element={<Metrics />} />
+            <Route path="/tags" element={<Tags />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

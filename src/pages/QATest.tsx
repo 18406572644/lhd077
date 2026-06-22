@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Send,
   Sparkles,
@@ -9,13 +9,18 @@ import {
   BookMarked,
   AlertTriangle,
   History,
+  Tag as TagIcon,
+  Filter,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import PageHeader from "@/components/PageHeader";
 import VersionSelector from "@/components/VersionSelector";
 import ParamsPanel from "@/components/ParamsPanel";
-import type { QAResult, HumanJudgment } from "../../shared/types";
+import TagSelector from "@/components/TagSelector";
+import TagBadge from "@/components/TagBadge";
+import type { QAResult, HumanJudgment, Tag } from "../../shared/types";
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -29,10 +34,43 @@ export default function QATest() {
   const [standardAnswer, setStandardAnswer] = useState("");
   const [humanNote, setHumanNote] = useState("");
   const [questionWarning, setQuestionWarning] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
+  const [matchAllTags, setMatchAllTags] = useState(false);
+  const [showTagEditor, setShowTagEditor] = useState(false);
+  const [editingTagIds, setEditingTagIds] = useState<string[]>([]);
+  const [savingTags, setSavingTags] = useState(false);
 
   useEffect(() => {
     api.knowledge.listVersions().then(setVersions);
+    loadAllTags();
   }, [setVersions]);
+
+  const loadAllTags = async () => {
+    try {
+      const tags = await api.tags.list();
+      setAllTags(tags);
+    } catch (e) {
+      console.error("加载标签失败:", e);
+    }
+  };
+
+  const getTagById = (id: string): Tag | undefined => {
+    return allTags.find((t) => t.id === id);
+  };
+
+  const filteredHistory = useMemo(() => {
+    if (filterTagIds.length === 0) return history;
+    
+    return history.filter((r) => {
+      const tagIds = r.tagIds || [];
+      if (matchAllTags) {
+        return filterTagIds.every((tid) => tagIds.includes(tid));
+      } else {
+        return filterTagIds.some((tid) => tagIds.includes(tid));
+      }
+    });
+  }, [history, filterTagIds, matchAllTags]);
 
   useEffect(() => {
     if (question.length > MAX_QUESTION_LENGTH) {
@@ -82,6 +120,35 @@ export default function QATest() {
       showToast("判定已保存", "success");
     } catch (e) {
       showToast(e instanceof Error ? e.message : "保存失败", "error");
+    }
+  };
+
+  const openTagEditor = () => {
+    if (!currentResult) return;
+    setEditingTagIds(currentResult.tagIds || []);
+    setShowTagEditor(true);
+  };
+
+  const handleSaveTags = async () => {
+    if (!currentResult) return;
+    setSavingTags(true);
+    try {
+      const result = await api.tags.setEntityTags(
+        "qa",
+        currentResult.id,
+        editingTagIds
+      );
+      const updated = { ...currentResult, tagIds: result.tagIds };
+      setCurrentResult(updated);
+      setHistory((h) =>
+        h.map((r) => (r.id === currentResult.id ? updated : r))
+      );
+      showToast("标签保存成功", "success");
+      setShowTagEditor(false);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "保存失败", "error");
+    } finally {
+      setSavingTags(false);
     }
   };
 
@@ -175,6 +242,14 @@ export default function QATest() {
                   {judgmentBadge(currentResult.humanJudgment)}
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={openTagEditor}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                    title="编辑标签"
+                  >
+                    <TagIcon className="w-3.5 h-3.5" />
+                    标签
+                  </button>
                   <span className="text-xs text-slate-400">置信度</span>
                   <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -302,18 +377,57 @@ export default function QATest() {
         <div className="space-y-4">
           <ParamsPanel />
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-              <History className="w-4 h-4 text-primary-600" />
-              <span className="font-medium text-sm text-slate-700">历史记录</span>
+            <div className="px-4 py-3 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-primary-600" />
+                  <span className="font-medium text-sm text-slate-700">
+                    历史记录
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    ({filteredHistory.length}/{history.length})
+                  </span>
+                </div>
+                {filterTagIds.length > 0 && (
+                  <button
+                    onClick={() => setFilterTagIds([])}
+                    className="text-xs text-primary-600 hover:text-primary-700"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-3 h-3 text-slate-400" />
+                  <span className="text-[11px] text-slate-500">标签筛选</span>
+                </div>
+                <TagSelector
+                  selectedTagIds={filterTagIds}
+                  onChange={setFilterTagIds}
+                  placeholder="选择标签筛选"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={matchAllTags}
+                    onChange={(e) => setMatchAllTags(e.target.checked)}
+                    className="w-3 h-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  同时满足所有标签
+                </label>
+              </div>
             </div>
-            <div className="max-h-[500px] overflow-y-auto">
-              {history.length === 0 ? (
+            <div className="max-h-[400px] overflow-y-auto">
+              {filteredHistory.length === 0 ? (
                 <p className="p-8 text-center text-sm text-slate-400">
-                  暂无历史记录
+                  {history.length === 0
+                    ? "暂无历史记录"
+                    : "没有符合筛选条件的记录"}
                 </p>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {history.map((r) => (
+                  {filteredHistory.map((r) => (
                     <button
                       key={r.id}
                       onClick={() => {
@@ -326,6 +440,19 @@ export default function QATest() {
                     >
                       <div className="text-sm text-slate-700 line-clamp-1 mb-1">
                         {r.question}
+                      </div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {(r.tagIds || []).slice(0, 2).map((tagId) => {
+                          const tag = getTagById(tagId);
+                          return tag ? (
+                            <TagBadge key={tagId} tag={tag} size="sm" />
+                          ) : null;
+                        })}
+                        {(r.tagIds || []).length > 2 && (
+                          <span className="text-[10px] text-slate-400">
+                            +{(r.tagIds || []).length - 2}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         {judgmentBadge(r.humanJudgment)}
@@ -341,6 +468,85 @@ export default function QATest() {
           </div>
         </div>
       </div>
+
+      {showTagEditor && currentResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">
+                <TagIcon className="w-5 h-5 inline mr-2 text-primary-600" />
+                编辑问答标签
+              </h3>
+              <button
+                onClick={() => setShowTagEditor(false)}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-slate-600 line-clamp-2">
+                  问题：
+                  <span className="font-medium text-slate-800">
+                    {currentResult.question}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  选择标签
+                </label>
+                <TagSelector
+                  selectedTagIds={editingTagIds}
+                  onChange={setEditingTagIds}
+                  placeholder="选择要关联的标签"
+                />
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-500 mb-2">已选标签：</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {editingTagIds.length === 0 ? (
+                    <span className="text-xs text-slate-400">暂无标签</span>
+                  ) : (
+                    editingTagIds.map((tagId) => {
+                      const tag = getTagById(tagId);
+                      return tag ? (
+                        <TagBadge
+                          key={tagId}
+                          tag={tag}
+                          size="sm"
+                          onRemove={() =>
+                            setEditingTagIds((ids) =>
+                              ids.filter((id) => id !== tagId)
+                            )
+                          }
+                        />
+                      ) : null;
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowTagEditor(false)}
+                disabled={savingTags}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveTags}
+                disabled={savingTags}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingTags ? "保存中..." : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

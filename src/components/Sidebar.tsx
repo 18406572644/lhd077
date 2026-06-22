@@ -9,6 +9,7 @@ import {
   ScrollText,
   DatabaseZap,
   Settings,
+  Tags,
 } from "lucide-react";
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/scheduled-evaluation", label: "定时评测", icon: CalendarClock },
   { to: "/compare", label: "版本对比", icon: GitCompare },
   { to: "/metrics", label: "指标管理", icon: Gauge },
+  { to: "/tags", label: "标签管理", icon: Tags },
   { to: "/logs", label: "系统日志", icon: ScrollText },
   { to: "/settings", label: "系统设置", icon: Settings },
 ];

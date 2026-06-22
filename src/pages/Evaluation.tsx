@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Plus,
   Play,
@@ -25,11 +25,17 @@ import {
   RotateCcw,
   Check,
   Info,
+  Tag as TagIcon,
+  Filter,
+  Edit2,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import PageHeader from "@/components/PageHeader";
 import VersionSelector from "@/components/VersionSelector";
+import TagSelector from "@/components/TagSelector";
+import TagBadge from "@/components/TagBadge";
 import type {
   EvaluationTask,
   QAResult,
@@ -37,6 +43,7 @@ import type {
   TestCase,
   Metric,
   EvaluationWeights,
+  Tag,
 } from "../../shared/types";
 
 export default function Evaluation() {
@@ -60,14 +67,76 @@ export default function Evaluation() {
   const [tempWeights, setTempWeights] = useState<Partial<EvaluationWeights>>({});
   const [reevaluatingId, setReevaluatingId] = useState<string | null>(null);
   const [expandedResultId, setExpandedResultId] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
+  const [matchAllTags, setMatchAllTags] = useState(false);
+  const [showTagEditor, setShowTagEditor] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTagIds, setEditingTagIds] = useState<string[]>([]);
+  const [savingTags, setSavingTags] = useState(false);
 
   useEffect(() => {
     api.knowledge.listVersions().then(setVersions);
     loadTasks();
     loadMetrics();
     loadWeights();
+    loadAllTags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setVersions]);
+
+  const loadAllTags = async () => {
+    try {
+      const tags = await api.tags.list();
+      setAllTags(tags);
+    } catch (e) {
+      console.error("加载标签失败:", e);
+    }
+  };
+
+  const filteredTasks = useMemo(() => {
+    if (filterTagIds.length === 0) return tasks;
+
+    return tasks.filter((task) => {
+      const taskTagIds = task.tagIds || [];
+      if (matchAllTags) {
+        return filterTagIds.every((tid) => taskTagIds.includes(tid));
+      } else {
+        return filterTagIds.some((tid) => taskTagIds.includes(tid));
+      }
+    });
+  }, [tasks, filterTagIds, matchAllTags]);
+
+  const getTagById = (id: string): Tag | undefined => {
+    return allTags.find((t) => t.id === id);
+  };
+
+  const openTagEditor = async (task: EvaluationTask) => {
+    setEditingTaskId(task.id);
+    setEditingTagIds(task.tagIds || []);
+    setShowTagEditor(true);
+  };
+
+  const handleSaveTags = async () => {
+    if (!editingTaskId) return;
+    setSavingTags(true);
+    try {
+      await api.tags.setEntityTags("evaluation", editingTaskId, editingTagIds);
+      setTasks((list) =>
+        list.map((t) =>
+          t.id === editingTaskId ? { ...t, tagIds: editingTagIds } : t
+        )
+      );
+      if (selectedTask?.id === editingTaskId) {
+        setSelectedTask({ ...selectedTask, tagIds: editingTagIds });
+      }
+      showToast("标签保存成功", "success");
+      setShowTagEditor(false);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "保存失败", "error");
+    } finally {
+      setSavingTags(false);
+    }
+  };
 
   const loadTasks = async () => {
     const list = await api.evaluation.listTasks();
@@ -469,17 +538,47 @@ export default function Evaluation() {
         <div className="col-span-2">
           <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
-              <span className="font-medium text-sm text-slate-700">
-                评测任务（{tasks.length}）
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-sm text-slate-700">
+                  评测任务（{filteredTasks.length}/{tasks.length}）
+                </span>
+                {filterTagIds.length > 0 && (
+                  <button
+                    onClick={() => setFilterTagIds([])}
+                    className="text-xs text-primary-600 hover:text-primary-700"
+                  >
+                    清除筛选
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-slate-400" />
+                  <span className="text-[11px] text-slate-500">标签筛选</span>
+                </div>
+                <TagSelector
+                  selectedTagIds={filterTagIds}
+                  onChange={setFilterTagIds}
+                  placeholder="选择标签筛选"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={matchAllTags}
+                    onChange={(e) => setMatchAllTags(e.target.checked)}
+                    className="w-3 h-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  同时满足所有标签（AND）
+                </label>
+              </div>
             </div>
             <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-              {tasks.length === 0 && (
+              {filteredTasks.length === 0 && (
                 <p className="p-8 text-center text-sm text-slate-400">
-                  暂无评测任务
+                  {filterTagIds.length > 0 ? "没有匹配的评测任务" : "暂无评测任务"}
                 </p>
               )}
-              {tasks.map((t) => (
+              {filteredTasks.map((t) => (
                 <div
                   key={t.id}
                   className={`p-4 cursor-pointer transition-colors ${
@@ -524,7 +623,22 @@ export default function Evaluation() {
                         )}
                     </div>
                   )}
-                  <div className="mt-2 flex gap-1.5">
+                  {(t.tagIds || []).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(t.tagIds || []).slice(0, 3).map((tagId) => {
+                        const tag = getTagById(tagId);
+                        return tag ? (
+                          <TagBadge key={tagId} tag={tag} size="sm" />
+                        ) : null;
+                      })}
+                      {(t.tagIds || []).length > 3 && (
+                        <span className="text-[10px] text-slate-400 px-1.5 py-0.5">
+                          +{(t.tagIds || []).length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className="mt-2 flex gap-1.5 items-center">
                     {t.status !== "done" && t.status !== "running" && (
                       <button
                         onClick={(e) => {
@@ -562,6 +676,16 @@ export default function Evaluation() {
                         </a>
                       </>
                     )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openTagEditor(t);
+                      }}
+                      className="btn-secondary !py-1 !px-2 text-xs ml-auto"
+                      title="编辑标签"
+                    >
+                      <TagIcon className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -578,16 +702,34 @@ export default function Evaluation() {
               </div>
             ) : (
               <div>
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-slate-700">
-                      {selectedTask.name}
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="font-medium text-slate-700">
+                        {selectedTask.name}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {selectedTask.testSet.length} 条用例 ·{" "}
+                        {new Date(selectedTask.createdAt).toLocaleString("zh-CN")}
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">
-                      {selectedTask.testSet.length} 条用例 ·{" "}
-                      {new Date(selectedTask.createdAt).toLocaleString("zh-CN")}
-                    </div>
+                    <button
+                      onClick={() => openTagEditor(selectedTask)}
+                      className="btn-secondary !py-1 !px-2 text-xs"
+                    >
+                      <Edit2 className="w-3 h-3 mr-1" /> 编辑标签
+                    </button>
                   </div>
+                  {(selectedTask.tagIds || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {(selectedTask.tagIds || []).map((tagId) => {
+                        const tag = getTagById(tagId);
+                        return tag ? (
+                          <TagBadge key={tagId} tag={tag} size="sm" />
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                   {selectedTask.metrics && (
                     <div>
                       <div className="flex gap-4 mb-3">
@@ -1184,6 +1326,76 @@ export default function Evaluation() {
                   保存配置
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTagEditor && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden animate-slide-up">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TagIcon className="w-4 h-4 text-primary-500" />
+                <span className="font-medium text-slate-700">编辑标签</span>
+              </div>
+              <button
+                onClick={() => setShowTagEditor(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                选择标签
+              </label>
+              <TagSelector
+                selectedTagIds={editingTagIds}
+                onChange={setEditingTagIds}
+                placeholder="选择要关联的标签"
+              />
+              <div className="mt-4">
+                <p className="text-xs text-slate-500 mb-2">已选标签：</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {editingTagIds.length === 0 ? (
+                    <span className="text-xs text-slate-400">暂无标签</span>
+                  ) : (
+                    editingTagIds.map((tagId) => {
+                      const tag = getTagById(tagId);
+                      return tag ? (
+                        <TagBadge
+                          key={tagId}
+                          tag={tag}
+                          size="sm"
+                          onRemove={() =>
+                            setEditingTagIds((prev) =>
+                              prev.filter((id) => id !== tagId)
+                            )
+                          }
+                        />
+                      ) : null;
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-3 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                onClick={() => setShowTagEditor(false)}
+                className="btn-secondary"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveTags}
+                disabled={savingTags}
+                className="btn-primary"
+              >
+                {savingTags ? "保存中..." : "保存"}
+              </button>
             </div>
           </div>
         </div>

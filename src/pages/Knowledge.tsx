@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Upload,
   FileText,
@@ -11,6 +11,10 @@ import {
   AlertTriangle,
   XCircle,
   Copy,
+  Tag as TagIcon,
+  Edit2,
+  Filter,
+  X,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
@@ -18,7 +22,9 @@ import PageHeader from "@/components/PageHeader";
 import VersionSelector from "@/components/VersionSelector";
 import ParamsPanel from "@/components/ParamsPanel";
 import ImportProgressModal from "@/components/ImportProgressModal";
-import type { KnowledgeDocument, ImportResult } from "../../shared/types";
+import TagSelector from "@/components/TagSelector";
+import TagBadge from "@/components/TagBadge";
+import type { KnowledgeDocument, ImportResult, Tag } from "../../shared/types";
 
 const MAX_QUESTION_LENGTH = 2000;
 
@@ -37,10 +43,44 @@ export default function Knowledge() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importTaskId, setImportTaskId] = useState<string | null>(null);
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
+  const [matchAllTags, setMatchAllTags] = useState(false);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [showTagEditor, setShowTagEditor] = useState(false);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editingTagIds, setEditingTagIds] = useState<string[]>([]);
+  const [savingTags, setSavingTags] = useState(false);
 
   useEffect(() => {
     api.knowledge.listVersions().then(setVersions);
+    loadAllTags();
   }, [setVersions]);
+
+  const loadAllTags = async () => {
+    try {
+      const tags = await api.tags.list();
+      setAllTags(tags);
+    } catch (e) {
+      console.error("加载标签失败:", e);
+    }
+  };
+
+  const filteredDocuments = useMemo(() => {
+    if (filterTagIds.length === 0) return documents;
+    
+    return documents.filter((doc) => {
+      const docTagIds = doc.tagIds || [];
+      if (matchAllTags) {
+        return filterTagIds.every((tid) => docTagIds.includes(tid));
+      } else {
+        return filterTagIds.some((tid) => docTagIds.includes(tid));
+      }
+    });
+  }, [documents, filterTagIds, matchAllTags]);
+
+  const getTagById = (id: string): Tag | undefined => {
+    return allTags.find((t) => t.id === id);
+  };
 
   useEffect(() => {
     if (selectedVersionId) {
@@ -115,6 +155,31 @@ export default function Knowledge() {
       showToast(e instanceof Error ? e.message : "重建失败", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openTagEditor = async (doc: KnowledgeDocument) => {
+    setEditingDocId(doc.id);
+    setEditingTagIds(doc.tagIds || []);
+    setShowTagEditor(true);
+  };
+
+  const handleSaveTags = async () => {
+    if (!editingDocId) return;
+    setSavingTags(true);
+    try {
+      await api.tags.setEntityTags("document", editingDocId, editingTagIds);
+      setDocuments((docs) =>
+        docs.map((d) =>
+          d.id === editingDocId ? { ...d, tagIds: editingTagIds } : d
+        )
+      );
+      showToast("标签保存成功", "success");
+      setShowTagEditor(false);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "保存失败", "error");
+    } finally {
+      setSavingTags(false);
     }
   };
 
@@ -306,30 +371,70 @@ export default function Knowledge() {
 
         <div className="col-span-2">
           <div className="card overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <span className="font-medium text-sm text-slate-700">
-                文档列表（{documents.length}）
-              </span>
+            <div className="px-4 py-3 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium text-sm text-slate-700">
+                  文档列表（{filteredDocuments.length}/{documents.length}）
+                </span>
+                {filterTagIds.length > 0 && (
+                  <button
+                    onClick={() => setFilterTagIds([])}
+                    className="text-xs text-primary-600 hover:text-primary-700"
+                  >
+                    清除筛选
+                  </button>
+                )}
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs text-slate-500">按标签筛选</span>
+                  </div>
+                  <TagSelector
+                    selectedTagIds={filterTagIds}
+                    onChange={setFilterTagIds}
+                    placeholder="选择标签进行筛选"
+                  />
+                </div>
+                <div className="pt-5">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={matchAllTags}
+                      onChange={(e) => setMatchAllTags(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    同时满足所有标签
+                  </label>
+                </div>
+              </div>
             </div>
             {documents.length === 0 ? (
               <div className="p-12 text-center text-slate-400">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
                 <p>请先选择知识库版本或导入新文档</p>
               </div>
+            ) : filteredDocuments.length === 0 ? (
+              <div className="p-12 text-center text-slate-400">
+                <Filter className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p>没有符合筛选条件的文档</p>
+              </div>
             ) : (
-              <div className="overflow-auto max-h-[600px]">
+              <div className="overflow-auto max-h-[500px]">
                 <table className="w-full">
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
                       <th className="table-th">标题</th>
                       <th className="table-th">来源</th>
+                      <th className="table-th">标签</th>
                       <th className="table-th">切分数</th>
                       <th className="table-th">创建时间</th>
                       <th className="table-th"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {documents.map((d) => (
+                    {filteredDocuments.map((d) => (
                       <tr key={d.id} className="hover:bg-slate-50/50">
                         <td className="table-td">
                           <div className="flex items-center gap-2">
@@ -342,17 +447,42 @@ export default function Knowledge() {
                           </div>
                         </td>
                         <td className="table-td">{sourceBadge(d.source)}</td>
+                        <td className="table-td">
+                          <div className="flex flex-wrap gap-1">
+                            {(d.tagIds || []).slice(0, 3).map((tagId) => {
+                              const tag = getTagById(tagId);
+                              return tag ? (
+                                <TagBadge key={tagId} tag={tag} size="sm" />
+                              ) : null;
+                            })}
+                            {(d.tagIds || []).length > 3 && (
+                              <span className="text-xs text-slate-400">
+                                +{(d.tagIds || []).length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="table-td font-mono">{d.chunkCount}</td>
                         <td className="table-td text-slate-400 font-mono text-xs">
                           {new Date(d.createdAt).toLocaleString("zh-CN")}
                         </td>
                         <td className="table-td">
-                          <button
-                            onClick={() => handleDelete(d.id)}
-                            className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openTagEditor(d)}
+                              className="p-1.5 rounded hover:bg-primary-50 text-slate-400 hover:text-primary-500 transition-colors"
+                              title="编辑标签"
+                            >
+                              <TagIcon className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(d.id)}
+                              className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                              title="删除"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -371,6 +501,85 @@ export default function Knowledge() {
           onComplete={handleImportComplete}
           onCancel={handleImportCancel}
         />
+      )}
+
+      {showTagEditor && editingDocId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">
+                <TagIcon className="w-5 h-5 inline mr-2 text-primary-600" />
+                编辑文档标签
+              </h3>
+              <button
+                onClick={() => setShowTagEditor(false)}
+                className="p-1 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-slate-600">
+                  文档：
+                  <span className="font-medium text-slate-800">
+                    {documents.find((d) => d.id === editingDocId)?.title}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  选择标签
+                </label>
+                <TagSelector
+                  selectedTagIds={editingTagIds}
+                  onChange={setEditingTagIds}
+                  placeholder="选择要关联的标签"
+                />
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-500 mb-2">已选标签：</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {editingTagIds.length === 0 ? (
+                    <span className="text-xs text-slate-400">暂无标签</span>
+                  ) : (
+                    editingTagIds.map((tagId) => {
+                      const tag = getTagById(tagId);
+                      return tag ? (
+                        <TagBadge
+                          key={tagId}
+                          tag={tag}
+                          size="sm"
+                          onRemove={() =>
+                            setEditingTagIds((ids) =>
+                              ids.filter((id) => id !== tagId)
+                            )
+                          }
+                        />
+                      ) : null;
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowTagEditor(false)}
+                disabled={savingTags}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveTags}
+                disabled={savingTags}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingTags ? "保存中..." : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
