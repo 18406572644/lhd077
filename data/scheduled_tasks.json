@@ -1,0 +1,66 @@
+[
+  {
+    "name": "测试",
+    "testSet": [
+      {
+        "question": "如何重置密码？",
+        "standardAnswer": "点击登录页的忘记密码，通过邮箱验证重置"
+      },
+      {
+        "question": "支持哪些支付方式？",
+        "standardAnswer": "支持支付宝、微信支付和银行卡"
+      }
+    ],
+    "versionId": "ver_c742e5ecfc524d33",
+    "retrievalParams": {
+      "topK": 5,
+      "minScore": 0.1,
+      "chunkSize": 300,
+      "chunkOverlap": 50,
+      "useBM25": true
+    },
+    "metricIds": [],
+    "schedule": {
+      "frequency": "daily",
+      "timeOfDay": "10:53"
+    },
+    "notification": {
+      "enabled": true,
+      "types": [
+        "desktop"
+      ],
+      "onSuccess": true,
+      "onFailure": true,
+      "onAlert": true
+    },
+    "alertThresholds": {
+      "accuracyThreshold": 0.8,
+      "wrongRateThreshold": 0.3,
+      "consecutiveFailures": 3
+    },
+    "id": "sch_453aef6eaa3948e3",
+    "status": "active",
+    "consecutiveAlertCount": 0,
+    "createdAt": 1782096685863,
+    "updatedAt": 1782096788752,
+    "nextRunAt": 1782183180000,
+    "lastRunAt": 1782096788738,
+    "lastRunResultId": "eval_5c563a5ee9cc466c",
+    "lastRunMetrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 2,
+      "autoEvalStats": {
+        "avgSemanticSimilarity": 1,
+        "avgKeyInfoCoverage": 0.8999999999999999,
+        "avgFactualAccuracy": 1,
+        "avgFormatNormativity": 0.8,
+        "avgWeightedScore": 0.9500000000000001,
+        "autoAccuracy": 0,
+        "autoJudgmentCount": 2
+      }
+    }
+  }
+]

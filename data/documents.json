@@ -42,6 +42,9 @@
     "isDuplicate": false,
     "chunkCount": 462,
     "id": "doc_11f70945f09945fa",
-    "createdAt": 1782095380162
+    "createdAt": 1782095380162,
+    "tagIds": [
+      "tag_8b15a4580c69465c"
+    ]
   }
 ]

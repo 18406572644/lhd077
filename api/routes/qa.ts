@@ -47,4 +47,53 @@ router.get('/results/:id', (req, res) => {
   else res.json(r);
 });
 
+router.post('/ask/ab', (req, res) => {
+  const {
+    question,
+    versionId,
+    paramsA,
+    paramsB,
+    modelConfig,
+    standardAnswer,
+  } = req.body as {
+    question: string;
+    versionId: string;
+    paramsA?: Partial<RetrievalParams>;
+    paramsB?: Partial<RetrievalParams>;
+    modelConfig?: ModelConfig;
+    standardAnswer?: string;
+  };
+  if (!question || !versionId) {
+    res.status(400).json({ code: 'BAD_REQUEST', message: 'question 和 versionId 必填' });
+    return;
+  }
+  const { result, error } = QAService.askAB(
+    question,
+    versionId,
+    paramsA ?? {},
+    paramsB ?? {},
+    modelConfig,
+    standardAnswer,
+  );
+  if (error) {
+    res.status(400).json(error);
+    return;
+  }
+  res.json(result);
+});
+
+router.get('/recommendation/params', (req, res) => {
+  const versionId = req.query.versionId as string | undefined;
+  if (!versionId) {
+    res.status(400).json({ code: 'BAD_REQUEST', message: 'versionId 必填' });
+    return;
+  }
+  const rec = QAService.getParamsRecommendation(versionId);
+  if (!rec) {
+    res.status(404).json({ code: 'NO_DATA', message: '该版本暂无历史数据' });
+    return;
+  }
+  res.json(rec);
+});
+
 export default router;

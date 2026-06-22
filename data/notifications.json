@@ -1,0 +1,32 @@
+[
+  {
+    "type": "desktop",
+    "subject": "[评测完成] 测试",
+    "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:51:28",
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "executionId": "sex_035ea52cb3f0422a",
+    "success": true,
+    "id": "ntf_61bee7fee6e84210",
+    "sentAt": 1782096688321
+  },
+  {
+    "type": "desktop",
+    "subject": "[评测完成] 测试",
+    "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:51:37",
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "executionId": "sex_c1880d4327064d8a",
+    "success": true,
+    "id": "ntf_d82d7cca7c204920",
+    "sentAt": 1782096697474
+  },
+  {
+    "type": "desktop",
+    "subject": "[评测完成] 测试",
+    "body": "定时评测任务 \"测试\" 已完成。\n评测结果：\n  - 准确率: 100.0%\n  - 部分正确率: 0.0%\n  - 错误率: 0.0%\n  - 平均置信度: 100.0%\n执行时间: 2026/6/22 10:53:08",
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "executionId": "sex_4d9973d5c4b148f7",
+    "success": true,
+    "id": "ntf_e97319d32ecc4d94",
+    "sentAt": 1782096788764
+  }
+]

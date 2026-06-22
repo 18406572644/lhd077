@@ -433,3 +433,38 @@ export interface TagRelation {
   targetId: string;
   createdAt: number;
 }
+
+export interface ABCompareResult {
+  question: string;
+  versionId: string;
+  resultA: QAResult;
+  resultB: QAResult;
+  diff: {
+    confidenceDiff: number;
+    chunksOverlap: number;
+    chunksOnlyA: string[];
+    chunksOnlyB: string[];
+    answerDiff: boolean;
+  };
+}
+
+export interface ParamsStats {
+  params: RetrievalParams;
+  totalCount: number;
+  correctCount: number;
+  partialCount: number;
+  wrongCount: number;
+  unlabeledCount: number;
+  accuracy: number;
+  avgConfidence: number;
+  weightedScore: number;
+}
+
+export interface ParamsRecommendation {
+  versionId: string;
+  recommendations: ParamsStats[];
+  bestParams: RetrievalParams;
+  bestStats: ParamsStats;
+  sampleSize: number;
+  generatedAt: number;
+}

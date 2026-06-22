@@ -1,0 +1,77 @@
+[
+  {
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "evaluationTaskId": "eval_277bcdb064134a94",
+    "triggeredAt": 1782096687973,
+    "startedAt": 1782096687973,
+    "status": "done",
+    "id": "sex_035ea52cb3f0422a",
+    "finishedAt": 1782096688294,
+    "metrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 2,
+      "autoEvalStats": {
+        "avgSemanticSimilarity": 1,
+        "avgKeyInfoCoverage": 0.8999999999999999,
+        "avgFactualAccuracy": 1,
+        "avgFormatNormativity": 0.8,
+        "avgWeightedScore": 0.9500000000000001,
+        "autoAccuracy": 0,
+        "autoJudgmentCount": 2
+      }
+    }
+  },
+  {
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "evaluationTaskId": "eval_a7fcb99a4a124f01",
+    "triggeredAt": 1782096697212,
+    "startedAt": 1782096697212,
+    "status": "done",
+    "id": "sex_c1880d4327064d8a",
+    "finishedAt": 1782096697445,
+    "metrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 2,
+      "autoEvalStats": {
+        "avgSemanticSimilarity": 1,
+        "avgKeyInfoCoverage": 0.8999999999999999,
+        "avgFactualAccuracy": 1,
+        "avgFormatNormativity": 0.8,
+        "avgWeightedScore": 0.9500000000000001,
+        "autoAccuracy": 0,
+        "autoJudgmentCount": 2
+      }
+    }
+  },
+  {
+    "scheduledTaskId": "sch_453aef6eaa3948e3",
+    "evaluationTaskId": "eval_5c563a5ee9cc466c",
+    "triggeredAt": 1782096788521,
+    "startedAt": 1782096788521,
+    "status": "done",
+    "id": "sex_4d9973d5c4b148f7",
+    "finishedAt": 1782096788738,
+    "metrics": {
+      "accuracy": 1,
+      "partialRate": 0,
+      "wrongRate": 0,
+      "avgConfidence": 1,
+      "total": 2,
+      "autoEvalStats": {
+        "avgSemanticSimilarity": 1,
+        "avgKeyInfoCoverage": 0.8999999999999999,
+        "avgFactualAccuracy": 1,
+        "avgFormatNormativity": 0.8,
+        "avgWeightedScore": 0.9500000000000001,
+        "autoAccuracy": 0,
+        "autoJudgmentCount": 2
+      }
+    }
+  }
+]

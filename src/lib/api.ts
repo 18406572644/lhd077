@@ -30,6 +30,8 @@ import type {
   AlertThresholdConfig,
   Tag,
   TaggableType,
+  ABCompareResult,
+  ParamsRecommendation,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -165,6 +167,24 @@ export const api = {
       if (params?.taskId) qs.set("taskId", params.taskId);
       const q = qs.toString() ? `?${qs.toString()}` : "";
       return request<QAResult[]>(`/qa/results${q}`);
+    },
+    askAB(params: {
+      question: string;
+      versionId: string;
+      paramsA?: Partial<RetrievalParams>;
+      paramsB?: Partial<RetrievalParams>;
+      modelConfig?: ModelConfig;
+      standardAnswer?: string;
+    }): Promise<ABCompareResult> {
+      return request<ABCompareResult>("/qa/ask/ab", {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
+    },
+    getParamsRecommendation(versionId: string): Promise<ParamsRecommendation> {
+      return request<ParamsRecommendation>(
+        `/qa/recommendation/params?versionId=${encodeURIComponent(versionId)}`,
+      );
     },
   },
 

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "问答",
+    "color": "#EF4444",
+    "parentId": null,
+    "description": "测试",
+    "id": "tag_8b15a4580c69465c",
+    "createdAt": 1782099281630,
+    "updatedAt": 1782099281630
+  },
+  {
+    "name": "文件",
+    "color": "#06B6D4",
+    "parentId": null,
+    "description": "",
+    "id": "tag_bec43a8d0a5f4732",
+    "createdAt": 1782099289182,
+    "updatedAt": 1782099289182
+  }
+]
