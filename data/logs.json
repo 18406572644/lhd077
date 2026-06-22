@@ -290,5 +290,33 @@
     "affectedScope": "版本 ver_a5fb3831589f4761",
     "id": "log_8f5dc7a99b1b4a01",
     "timestamp": 1782086611870
+  },
+  {
+    "level": "info",
+    "category": "import",
+    "message": "导入完成：成功1条，重复0条，跳过0条，错误0条",
+    "affectedScope": "版本 ver_b3e7b54dd47a475e",
+    "id": "log_0cb149662ac64b56",
+    "timestamp": 1782088739443
+  },
+  {
+    "level": "info",
+    "category": "index",
+    "message": "版本 导入版本 2026/6/22 08:38:59 索引重建成功",
+    "affectedScope": "版本 ver_b3e7b54dd47a475e",
+    "id": "log_6f5240507b0c4c97",
+    "timestamp": 1782088743368
+  },
+  {
+    "level": "info",
+    "category": "qa",
+    "message": "人工标注结果：partial",
+    "details": {
+      "resultId": "qa_84099ec9a46e41d1",
+      "judgment": "partial"
+    },
+    "affectedScope": "问答结果 qa_84099ec9a46e41d1",
+    "id": "log_3583ea15d178479c",
+    "timestamp": 1782088827067
   }
 ]

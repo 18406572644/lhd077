@@ -264,3 +264,30 @@ export type ApiError = {
   affectedScope?: string;
   recoverable?: boolean;
 };
+
+export type BackupType = 'full' | 'incremental';
+
+export interface BackupInfo {
+  id: string;
+  name: string;
+  type: BackupType;
+  createdAt: number;
+  size: number;
+  description?: string;
+  baseBackupId?: string;
+  dataFiles: string[];
+  checksum: string;
+}
+
+export interface BackupListResult {
+  backups: BackupInfo[];
+  lastBackupAt?: number;
+  totalSize: number;
+}
+
+export interface RestoreResult {
+  success: boolean;
+  message: string;
+  rollbackBackupId?: string;
+  restoredAt: number;
+}

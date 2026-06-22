@@ -17,6 +17,9 @@ import type {
   MetricComputeType,
   AutoEvaluation,
   EvaluationWeights,
+  BackupInfo,
+  BackupListResult,
+  RestoreResult,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -334,6 +337,53 @@ export const api = {
       if (params?.category) qs.set("category", params.category);
       const q = qs.toString() ? `?${qs.toString()}` : "";
       return `${API_BASE}/logs/export${q}`;
+    },
+  },
+
+  backup: {
+    list(): Promise<BackupListResult> {
+      return request<BackupListResult>("/backup");
+    },
+    createFull(description?: string): Promise<{ success: boolean; backup: BackupInfo }> {
+      return request("/backup/full", {
+        method: "POST",
+        body: JSON.stringify({ description }),
+      });
+    },
+    createIncremental(description?: string): Promise<{ success: boolean; backup: BackupInfo }> {
+      return request("/backup/incremental", {
+        method: "POST",
+        body: JSON.stringify({ description }),
+      });
+    },
+    get(id: string): Promise<{ success: boolean; backup: BackupInfo }> {
+      return request(`/backup/${encodeURIComponent(id)}`);
+    },
+    restore(id: string): Promise<RestoreResult & { success: boolean }> {
+      return request(`/backup/${encodeURIComponent(id)}/restore`, {
+        method: "POST",
+      });
+    },
+    rollback(id: string): Promise<RestoreResult & { success: boolean }> {
+      return request(`/backup/${encodeURIComponent(id)}/rollback`, {
+        method: "POST",
+      });
+    },
+    remove(id: string): Promise<{ success: boolean; message?: string }> {
+      return request(`/backup/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    },
+    downloadUrl(id: string): string {
+      return `${API_BASE}/backup/${encodeURIComponent(id)}/download`;
+    },
+    importFile(file: File): Promise<{ success: boolean; backup: BackupInfo }> {
+      const fd = new FormData();
+      fd.append("file", file);
+      return request("/backup/import", {
+        method: "POST",
+        body: fd,
+      });
     },
   },
 };

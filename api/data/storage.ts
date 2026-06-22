@@ -6,11 +6,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 const EXPORTS_DIR = path.join(PROJECT_ROOT, 'exports');
+const BACKUPS_DIR = path.join(PROJECT_ROOT, 'backups');
 
 export const PATHS = {
   root: PROJECT_ROOT,
   data: DATA_DIR,
   exports: EXPORTS_DIR,
+  backups: BACKUPS_DIR,
   versions: path.join(DATA_DIR, 'versions'),
   documents: path.join(DATA_DIR, 'documents'),
   chunks: path.join(DATA_DIR, 'chunks'),

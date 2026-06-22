@@ -7,6 +7,7 @@ import Evaluation from "@/pages/Evaluation";
 import Compare from "@/pages/Compare";
 import Logs from "@/pages/Logs";
 import Metrics from "@/pages/Metrics";
+import Settings from "@/pages/Settings";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/compare" element={<Compare />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/logs" element={<Logs />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
         <Toast />

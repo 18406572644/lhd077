@@ -1,0 +1,25 @@
+[
+  {
+    "id": "bak_f230dd8ef0ec4698",
+    "name": "全量备份_2026-06-22-01-19-14",
+    "type": "full",
+    "createdAt": 1782091154537,
+    "size": 603368,
+    "dataFiles": [
+      "documents.json",
+      "chunks.json",
+      "versions.json",
+      "qa.json",
+      "evaluations.json",
+      "logs.json",
+      "metrics.json",
+      "indexes\\ver_7f1c84836637458b.json",
+      "indexes\\ver_a5fb3831589f4761.json",
+      "indexes\\ver_b3e7b54dd47a475e.json",
+      "indexes\\ver_d8b1ae6e69cd4521.json",
+      "indexes\\ver_f3c89ce3f8ad4578.json",
+      "indexes\\ver_f682c80a7a9e4518.json"
+    ],
+    "checksum": "8slv2"
+  }
+]

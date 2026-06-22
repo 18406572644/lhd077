@@ -7,6 +7,7 @@ import {
   Gauge,
   ScrollText,
   DatabaseZap,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { to: "/compare", label: "版本对比", icon: GitCompare },
   { to: "/metrics", label: "指标管理", icon: Gauge },
   { to: "/logs", label: "系统日志", icon: ScrollText },
+  { to: "/settings", label: "系统设置", icon: Settings },
 ];
 
 export default function Sidebar() {
