@@ -15,6 +15,8 @@ import type {
   Metric,
   BuiltInMetric,
   MetricComputeType,
+  AutoEvaluation,
+  EvaluationWeights,
 } from "../../shared/types";
 
 const API_BASE = "/api";
@@ -195,6 +197,46 @@ export const api = {
     },
     exportTask(id: string): string {
       return `${API_BASE}/evaluation/tasks/${id}/export`;
+    },
+    getWeights(): Promise<EvaluationWeights> {
+      return request<EvaluationWeights>("/evaluation/weights");
+    },
+    setWeights(weights: Partial<EvaluationWeights>): Promise<EvaluationWeights> {
+      return request<EvaluationWeights>("/evaluation/weights", {
+        method: "PUT",
+        body: JSON.stringify(weights),
+      });
+    },
+    resetWeights(): Promise<EvaluationWeights> {
+      return request<EvaluationWeights>("/evaluation/weights/reset", {
+        method: "POST",
+      });
+    },
+    evaluateAnswer(params: {
+      answer: string;
+      standardAnswer: string;
+      weights?: Partial<EvaluationWeights>;
+    }): Promise<AutoEvaluation> {
+      return request<AutoEvaluation>("/evaluation/evaluate", {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
+    },
+    reEvaluateTask(id: string, weights?: Partial<EvaluationWeights>): Promise<EvaluationTask> {
+      return request<EvaluationTask>(`/evaluation/tasks/${id}/re-evaluate`, {
+        method: "POST",
+        body: JSON.stringify({ weights }),
+      });
+    },
+    applyAutoJudgment(resultId: string): Promise<QAResult> {
+      return request<QAResult>(`/evaluation/results/${resultId}/apply-judgment`, {
+        method: "POST",
+      });
+    },
+    batchApplyAutoJudgments(taskId: string): Promise<{ updated: number; total: number }> {
+      return request(`/evaluation/tasks/${taskId}/apply-judgments`, {
+        method: "POST",
+      });
     },
   },
 
