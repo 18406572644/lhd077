@@ -15,7 +15,6 @@ import {
   readJsonFile,
   writeJsonFile,
   appendJsonFile,
-  deleteFile,
 } from './storage.js';
 
 ensureAllDirs();
@@ -257,18 +256,105 @@ export const LogRepo = {
   },
 };
 
+const MAX_SCRIPT_LENGTH = 10000;
+const MAX_METRICS_COUNT = 100;
+
+function validateMetricData(data: Partial<Metric>): void {
+  if (data.name !== undefined) {
+    if (typeof data.name !== 'string') {
+      throw new Error('指标名称必须是字符串');
+    }
+    if (data.name.length === 0 || data.name.length > 100) {
+      throw new Error('指标名称长度必须在 1-100 个字符之间');
+    }
+  }
+  if (data.description !== undefined) {
+    if (typeof data.description !== 'string') {
+      throw new Error('指标描述必须是字符串');
+    }
+    if (data.description.length > 500) {
+      throw new Error('指标描述不能超过 500 个字符');
+    }
+  }
+  if (data.computeType !== undefined) {
+    if (!['built-in', 'custom'].includes(data.computeType)) {
+      throw new Error('无效的计算方式');
+    }
+  }
+  if (data.builtInType !== undefined && data.builtInType !== null) {
+    if (!['accuracy', 'partialRate', 'wrongRate', 'avgConfidence'].includes(data.builtInType)) {
+      throw new Error('无效的内置指标类型');
+    }
+  }
+  if (data.customScript !== undefined && data.customScript !== null) {
+    if (typeof data.customScript !== 'string') {
+      throw new Error('自定义脚本必须是字符串');
+    }
+    if (data.customScript.length > MAX_SCRIPT_LENGTH) {
+      throw new Error(`自定义脚本长度不能超过 ${MAX_SCRIPT_LENGTH} 个字符`);
+    }
+    if (data.customScript.includes('require(') || data.customScript.includes('import ')) {
+      throw new Error('自定义脚本不允许导入模块');
+    }
+    if (data.customScript.includes('process.') || data.customScript.includes('fs.') || data.customScript.includes('child_process')) {
+      throw new Error('自定义脚本不允许访问系统资源');
+    }
+  }
+  if (data.weight !== undefined) {
+    if (typeof data.weight !== 'number' || isNaN(data.weight)) {
+      throw new Error('权重必须是数字');
+    }
+    if (data.weight < 0 || data.weight > 100) {
+      throw new Error('权重必须在 0-100 之间');
+    }
+  }
+  if (data.higherIsBetter !== undefined) {
+    if (typeof data.higherIsBetter !== 'boolean') {
+      throw new Error('higherIsBetter 必须是布尔值');
+    }
+  }
+}
+
 export const MetricRepo = {
   list(): Metric[] {
-    return readJsonFile<Metric[]>(METRICS_FILE, []);
+    try {
+      return readJsonFile<Metric[]>(METRICS_FILE, []);
+    } catch (e) {
+      console.error('读取指标列表失败:', e);
+      return [];
+    }
   },
   getById(id: string): Metric | undefined {
+    if (!id || typeof id !== 'string') return undefined;
     return this.list().find((m) => m.id === id);
   },
   getByIds(ids: string[]): Metric[] {
-    const set = new Set(ids);
+    if (!Array.isArray(ids)) return [];
+    const set = new Set(ids.filter((id) => id && typeof id === 'string'));
     return this.list().filter((m) => set.has(m.id));
   },
   create(m: Omit<Metric, 'id' | 'createdAt' | 'updatedAt'>): Metric {
+    validateMetricData(m);
+
+    if (m.computeType === 'built-in' && !m.builtInType) {
+      throw new Error('内置指标需要指定类型');
+    }
+    if (m.computeType === 'custom' && !m.customScript?.trim()) {
+      throw new Error('自定义指标需要提供脚本');
+    }
+
+    const existing = this.list();
+    if (existing.length >= MAX_METRICS_COUNT) {
+      throw new Error(`最多只能创建 ${MAX_METRICS_COUNT} 个指标`);
+    }
+
+    const duplicate = existing.find(
+      (item) => item.name.toLowerCase() === m.name.toLowerCase(),
+    );
+    if (duplicate) {
+      throw new Error('已存在同名指标');
+    }
+
     const now = Date.now();
     const full: Metric = {
       ...m,
@@ -280,17 +366,44 @@ export const MetricRepo = {
     return full;
   },
   update(id: string, patch: Partial<Metric>): Metric | undefined {
+    if (!id || typeof id !== 'string') return undefined;
+
     const all = this.list();
     const idx = all.findIndex((m) => m.id === id);
     if (idx === -1) return undefined;
-    all[idx] = { ...all[idx], ...patch, updatedAt: Date.now() };
+
+    validateMetricData(patch);
+
+    if (patch.name !== undefined) {
+      const duplicate = all.find(
+        (item, i) =>
+          i !== idx && item.name.toLowerCase() === patch.name!.toLowerCase(),
+      );
+      if (duplicate) {
+        throw new Error('已存在同名指标');
+      }
+    }
+
+    const updated = { ...all[idx], ...patch, updatedAt: Date.now() };
+
+    if (updated.computeType === 'built-in' && !updated.builtInType) {
+      throw new Error('内置指标需要指定类型');
+    }
+    if (updated.computeType === 'custom' && !updated.customScript?.trim()) {
+      throw new Error('自定义指标需要提供脚本');
+    }
+
+    all[idx] = updated;
     writeJsonFile(METRICS_FILE, all);
     return all[idx];
   },
   delete(id: string): boolean {
+    if (!id || typeof id !== 'string') return false;
+
     const all = this.list();
     const filtered = all.filter((m) => m.id !== id);
     if (filtered.length === all.length) return false;
+
     writeJsonFile(METRICS_FILE, filtered);
     return true;
   },

@@ -7,16 +7,96 @@ import type {
   BuiltInMetric,
 } from '../../shared/types.js';
 
+const ALLOWED_SCRIPT_PATTERNS = /^(?!.*(require|import|process|fs|child_process|eval|Function|__dirname|__filename|global|window|document|fetch|XMLHttpRequest|WebSocket|setTimeout|setInterval|setImmediate)).*$/s;
+const MAX_SCRIPT_EXECUTION_TIME = 1000;
+
+function validateScriptSecurity(script: string): void {
+  if (!script || typeof script !== 'string') {
+    throw new Error('脚本不能为空');
+  }
+  if (script.length > 10000) {
+    throw new Error('脚本长度不能超过 10000 个字符');
+  }
+  if (!ALLOWED_SCRIPT_PATTERNS.test(script)) {
+    throw new Error('脚本包含不安全的关键字，不允许导入模块、访问系统资源或使用异步操作');
+  }
+  const dangerousPatterns = [
+    /\brequire\s*\(/,
+    /\bimport\s+[\s\S]*?\bfrom\b/,
+    /\bprocess\./,
+    /\bfs\./,
+    /\bchild_process/,
+    /\beval\s*\(/,
+    /\bnew\s+Function\s*\(/,
+    /\b__dirname\b/,
+    /\b__filename\b/,
+    /\bglobal\b/,
+    /\bwindow\b/,
+    /\bdocument\b/,
+    /\bfetch\s*\(/,
+    /\bXMLHttpRequest\b/,
+    /\bWebSocket\b/,
+    /\bsetTimeout\s*\(/,
+    /\bsetInterval\s*\(/,
+    /\bsetImmediate\s*\(/,
+    /\bPromise\s*\(/,
+    /\basync\s+/,
+    /\bawait\s+/,
+  ];
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(script)) {
+      throw new Error(`脚本包含不安全的模式: ${pattern.toString()}`);
+    }
+  }
+}
+
 function runCustomScript(script: string, results: QAResult[]): number {
+  validateScriptSecurity(script);
+
+  const startTime = Date.now();
+
   try {
-    const fn = new Function('results', `
+    const safeResults = Object.freeze(
+      results.map((r) =>
+        Object.freeze({
+          id: r.id,
+          question: r.question,
+          answer: r.answer,
+          standardAnswer: r.standardAnswer,
+          confidence: r.confidence,
+          humanJudgment: r.humanJudgment,
+          createdAt: r.createdAt,
+        }),
+      ),
+    );
+
+    const wrappedScript = `
       "use strict";
+      var results = arguments[0];
       ${script}
-    `);
-    const value = fn(results);
-    if (typeof value !== 'number' || isNaN(value)) {
+    `;
+
+    const fn = new Function(wrappedScript);
+    const value = fn(safeResults);
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed > MAX_SCRIPT_EXECUTION_TIME) {
+      throw new Error(`脚本执行时间过长 (${elapsed}ms)，超过 ${MAX_SCRIPT_EXECUTION_TIME}ms 限制`);
+    }
+
+    if (typeof value !== 'number') {
       throw new Error('脚本必须返回一个数字');
     }
+    if (isNaN(value)) {
+      throw new Error('脚本返回值不能是 NaN');
+    }
+    if (!isFinite(value)) {
+      throw new Error('脚本返回值必须是有限数字');
+    }
+    if (value < 0 || value > 1) {
+      throw new Error('脚本返回值必须在 0-1 之间');
+    }
+
     return value;
   } catch (e) {
     throw new Error(`自定义脚本执行失败: ${e instanceof Error ? e.message : String(e)}`);
